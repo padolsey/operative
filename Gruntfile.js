@@ -3,15 +3,6 @@ var fs = require('fs');
 
 var VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8');
 
-var FULL_BANNER = [
-	'/**',
-	' * SIML (c) James Padolsey 2013',
-	' * @version ' + VERSION,
-	' * @license https://github.com/padolsey/SIML/blob/master/LICENSE-MIT',
-	' * @info http://github.com/padolsey/SIML',
-	' */'
-].join('\n') + '\n';
-
 var MIN_BANNER = '/** Operative v' + VERSION + ' (c) 2013 James padolsey, MIT-licensed, http://github.com/padolsey/operative **/\n';
 
 module.exports = function(grunt) {
