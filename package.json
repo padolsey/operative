@@ -1,0 +1,23 @@
+{
+  "name": "operative",
+  "title": "operative",
+  "description": "Operative: Inline Web-Worker Helper",
+  "version": "0.0.1",
+  "author": "James Padolsey (http://git.io/padolsey)",
+  "main": "dist/Operative.min.js",
+  "devDependencies": {
+    "grunt-contrib-jshint": "0.1.1rc6",
+    "grunt-contrib-uglify": "0.1.1rc6",
+    "grunt-contrib-jasmine": "0.4.2",
+    "grunt": "0.4.0rc5"
+  },
+  "keywords": [],
+  "scripts": {
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/padolsey/operative.git"
+  },
+  "license": "MIT"
+}

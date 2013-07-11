@@ -1,0 +1,194 @@
+var async = function async(fn) {
+	// Little wrapper for async tests
+	jasmine.getEnv().currentSpec.queue.add({
+		execute: function(next) {
+			fn(next);
+		}
+	});
+};
+
+describe('Operative', function() {
+
+	it('Utilises Worker', function() {
+		var ActualWorker = window.Worker;
+		var isCalled = false;
+		window.Worker = function(b) {
+			isCalled = true;
+			return new ActualWorker(b);
+		};
+		operative({ x: function() {} });
+		expect(isCalled).toBe(true);
+		window.Worker = ActualWorker;
+	});
+
+	describe('With Worker Support', function() {
+
+		it('Works with basic calculator', function() {
+			var o = operative({
+				add: function(a, b) {
+					return a + b;
+				},
+				subtract: function(a, b) {
+					return a - b;
+				},
+				isItAWorker: function() {
+					return this.isWorker;
+				}
+			});
+
+			async(function(nxt) {
+				o.add(1, 2, function(n) {
+					expect(n).toBe(3);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.isItAWorker(function(isWorker) {
+					expect(isWorker).toBe(true);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.subtract(100, 2, function(n) {
+					expect(n).toBe(98);
+					nxt();
+				});
+			});
+
+		});
+
+		describe('Callback is called and removed correctly', function() {
+
+			var o = operative({
+				longAction: function() {
+					for (var i = 0; i < 10000000; ++i);
+				}
+			});
+			var callback = jasmine.createSpy('callback');
+
+			o.longAction(callback);
+			
+			runs(function() {
+				expect(o.__operative__.callbacks[1]).toBe(callback);
+			});
+
+			waitsFor(function() {
+				return callback.callCount === 1;
+			});
+
+			runs(function() {
+				expect(o.__operative__.callbacks[1]).not.toBeDefined();
+			});
+
+		});
+
+		describe('Multiple Operatives', function() {
+			it('Each complete asynchronously', function() {
+				var s = [];
+				var a = operative({
+					run: function() {
+						for (var i = 0; i < 1000000; ++i);
+						return 'A';
+					}
+				});
+				var b = operative({
+					run: function() {
+						for (var i = 0; i < 1000; ++i);
+						return 'B';
+					}
+				});
+				var c = operative({
+					run: function() {
+						for (var i = 0; i < 1; ++i);
+						return 'C';
+					}
+				});
+				function add(v) { s.push(v); }
+				a.run(add);
+				b.run(add);
+				c.run(add);
+				expect(s.length).toBe(0);
+				waitsFor(function() {
+					return s.length === 3;
+				});
+				runs(function() {
+					expect(s.sort().join('')).toBe('ABC');
+				});
+			});
+		});
+
+	});
+
+	describe('Without Worker Support', function() {
+
+		beforeEach(function() {
+			operative.hasWorkerSupport = false;
+		});
+
+		it('Works with basic calculator', function() {
+			var o = operative({
+				something: 3333,
+				setup: function() {
+					this.somethingElse = 4444;
+				},
+				add: function(a, b) {
+					return a + b;
+				},
+				subtract: function(a, b) {
+					return a - b;
+				},
+				getSomething: function() {
+					return this.something;
+				},
+				getSomethingElse: function() {
+					return this.somethingElse;
+				},
+				isItAWorker: function() {
+					return this.isWorker;
+				}
+			});
+
+			async(function(nxt) {
+				o.add(1, 2, function(n) {
+					expect(n).toBe(3);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.isItAWorker(function(isWorker) {
+					expect(isWorker).toBe(false);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.getSomething(function(n) {
+					expect(n).toBe(3333);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.getSomethingElse(function(n) {
+					expect(n).toBe(4444);
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.subtract(100, 2, function(n) {
+					expect(n).toBe(98);
+					// END:
+					operative.hasWorkerSupport = true;
+					nxt();
+				});
+			});
+
+		});
+
+	});
+
+});
