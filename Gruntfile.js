@@ -26,19 +26,26 @@ module.exports = function(grunt) {
 				compress: true,
 				mangle: true
 			},
-			'default': {
-				src: 'src/operative.js',
+			dist: {
+				src: 'dist/operative.js',
 				dest: 'dist/operative.min.js'
+			}
+		},
+		concat: {
+			dist: {
+				src: ['src/operative.js'],
+				dest: 'dist/operative.js'
 			}
 		}
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-jasmine');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
+	grunt.loadNpmTasks('grunt-contrib-concat');
 
 	grunt.registerTask('default', ['build']);
 	grunt.registerTask('test', ['jasmine']);
 
-	grunt.registerTask('build', ['jasmine', 'uglify']);
+	grunt.registerTask('build', ['jasmine', 'concat:dist', 'uglify:dist']);
 
 };

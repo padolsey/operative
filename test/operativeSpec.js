@@ -9,18 +9,6 @@ var async = function async(fn) {
 
 describe('Operative', function() {
 
-	it('Utilises Worker', function() {
-		var ActualWorker = window.Worker;
-		var isCalled = false;
-		window.Worker = function(b) {
-			isCalled = true;
-			return new ActualWorker(b);
-		};
-		operative({ x: function() {} });
-		expect(isCalled).toBe(true);
-		window.Worker = ActualWorker;
-	});
-
 	describe('With Worker Support', function() {
 
 		it('Works with basic calculator', function() {
@@ -59,29 +47,31 @@ describe('Operative', function() {
 
 		});
 
-		describe('Callback is called and removed correctly', function() {
+		xdescribe('Callback', function() {
+			it('Is called and removed correctly', function() {
 
-			var o = operative({
-				longAction: function() {
-					for (var i = 0; i < 10000000; ++i);
-				}
+				var o = operative({
+					longAction: function() {
+						for (var i = 0; i < 10000000; ++i);
+					}
+				});
+				var callback = jasmine.createSpy('callback');
+
+				o.longAction(callback);
+				
+				runs(function() {
+					expect(o.__operative__.callbacks[1]).toBe(callback);
+				});
+
+				waitsFor(function() {
+					return callback.callCount === 1;
+				});
+
+				runs(function() {
+					expect(o.__operative__.callbacks[1]).not.toBeDefined();
+				});
+
 			});
-			var callback = jasmine.createSpy('callback');
-
-			o.longAction(callback);
-			
-			runs(function() {
-				expect(o.__operative__.callbacks[1]).toBe(callback);
-			});
-
-			waitsFor(function() {
-				return callback.callCount === 1;
-			});
-
-			runs(function() {
-				expect(o.__operative__.callbacks[1]).not.toBeDefined();
-			});
-
 		});
 
 		describe('Multiple Operatives', function() {

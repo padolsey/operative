@@ -3,7 +3,9 @@
 <title></title>
 <body>
 
-	<script src="src/operative.js"></script>
+	<script src="../dist/operative.min.js"></script>
+
+	<!-- SOME RANDOM DEV TESTING -->
 
 	<script>
 		o = operative({
@@ -11,15 +13,13 @@
 			base: [1,2,3],
 
 			setup: function() {
-				console.log('OMG', this.base);
+				console.log('Setup:', this.base);
 			},
 
 			add: function(a, b) {
-				console.warn('--->', this.hasWorkerSupport)
+				console.warn('IsWorker?', this.isWorker)
 				console.log('Start');
-				console.time('x');
 				for (var i = 0; i < 100000000; ++i);
-				console.timeEnd('x')
 				return this.base + a + b;
 			},
 
@@ -31,11 +31,10 @@
 
 		});
 
-		console.log(o);
 		o.add(4, 3, function() {
-			console.warn('Result::::', arguments);
+			console.warn('Result:', [].slice.call(arguments));
 		});
-		console.log('IMA F');
+		console.log('Sync Complete');
 	</script>
 
 </body>

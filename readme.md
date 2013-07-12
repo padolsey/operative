@@ -2,7 +2,7 @@
 
 **Before reading this please ensure you fully understand [the concept of Web Workers](https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers)**.
 
-Operative is a small JS utility (1k *gzipped*) for seamlessly creating Web Worker scripts. Its features include:
+Operative is a small JS utility (~1.5k *gzipped*) for seamlessly creating Web Worker scripts. Its features include:
 
  * Seamless API Authoring
  * Producing debuggable Worker Blobs
@@ -95,25 +95,37 @@ craziness.doCrazy(function(result) {
 
 ### Browser Support for Workers
 
-[Blob support](http://caniuse.com/#feat=filereader) and [Worker support](http://caniuse.com/#feat=webworkers) (with object-passing):
-
+ * FF 17+
+ * Chrome 7+
+ * Safari 4+
+ * Opera 11+
  * IE10+
- * FF 21+
- * Chrome 26+
- * Safari 6+
- * iOS Safari 6+
- * Opera 15+
 
 ### Degraded Operative
 
+Operative degrades in this order:
+
+*(higher is better/cooler)*
+
+ * Full Worker via Blob & Transferrable-Object passing (Ch5+, FF4+, IE11+, Op11+, Sf5+)
+ * Full Worker via Eval & Transferrable-Object passing (IE10)
+ * Full Worker via Blob & JSON marshalling *(???)*
+ * Full Worker via Eval & JSON marshalling (Sf4)
+ * No Worker: Regular JS called inline (*older browsers*)
+
 Operative will degrade in environments with no Worker or Blob support. In such a case the code would execute as regular in-place JavaScript. The calls will still be asynchronous though, not immediate.
 
-If you are looking to support this degraded state (honestly, only do it if you have to) then you'll also need to avoid utilising Worker-specific APIs like `importScripts`.
+If you are looking to support this fully degraded state (honestly, only do it if you have to) then you'll also need to avoid utilising Worker-specific APIs like `importScripts`.
+
+### No Worker-Via-Blob Support
+
+Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4.0) via eval, and it requires `operative.js` or `operative.min.js` to be its own file and included in the page via a `<script>` tag. Or, alternatively, if its bundled with other JS, you'll have to have an additional `operative.js` and specify it *before creating an operative module* via `operative.setSelfURL('path/to/operative.js')` (this'll only generate a request where the aforementioned support is lacking). Due to the usage of eval in these cases it is recommended to debug your operatives in more capable browsers.
 
 ### Operative API
 
  * *{Function}* *operative*: A global function which creates a new Operative module with the passed methods/properties. Note: Non-function properties must be basic objects that can be passed to `JSON.stringify`.
  * *{Boolean}* *operative.hasWorkerSupport*: A boolean indicating whether both Blob and Worker support is detected.
+ * *{Function}* *operative.setSelfURL*: Allows you to set the URL of the operative script. Use this if you want IE10 & Safari 4/5 support *and* you're not including operative by the conventional `<script src="operative.js"></script>`.
 
 To create an operative module:
 
@@ -143,3 +155,23 @@ And to destroy the operative (and thus its worker):
 o.destroy();
 ```
 
+### Testing & Building
+
+```
+$ # grab dependencies
+$ npm install
+
+$ # install grunt globally if you don't have it...
+$ npm install -g grunt-cli
+
+$ # test
+$ grunt test
+
+$ # do everything + build dist:
+$ grunt
+```
+
+### Changelog
+
+ * 0.0.1 Initial
+ * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
