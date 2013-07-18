@@ -47,9 +47,8 @@ describe('Operative', function() {
 
 		});
 
-		xdescribe('Callback', function() {
+		describe('Callback', function() {
 			it('Is called and removed correctly', function() {
-
 				var o = operative({
 					longAction: function() {
 						for (var i = 0; i < 10000000; ++i);
@@ -58,7 +57,7 @@ describe('Operative', function() {
 				var callback = jasmine.createSpy('callback');
 
 				o.longAction(callback);
-				
+
 				runs(function() {
 					expect(o.__operative__.callbacks[1]).toBe(callback);
 				});
@@ -71,6 +70,40 @@ describe('Operative', function() {
 					expect(o.__operative__.callbacks[1]).not.toBeDefined();
 				});
 
+			});
+		});
+
+		describe('Async Operative', function() {
+			it('Should be able to return [within the worker] asynchronously', function() {
+				var o = operative({
+					doAsyncFoo: function() {
+						var finish = this.async();
+						setTimeout(function() {
+							finish(123);
+						}, 150);
+					},
+					doAsyncBar: function() {
+						var finish = this.async();
+						setTimeout(function() {
+							finish(456);
+						}, 10);
+					}
+				});
+
+				var result = [];
+
+				runs(function() {
+					o.doAsyncFoo(function(v) { result.push(v); });
+					o.doAsyncBar(function(v) { result.push(v); });
+				});
+
+				waitsFor(function(nxt) {
+					return result.length === 2;
+				});
+
+				runs(function() {
+					expect(result).toEqual([456, 123]);
+				});
 			});
 		});
 
