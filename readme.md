@@ -2,7 +2,7 @@
 
 **Before reading this please ensure you fully understand [the concept of Web Workers](https://developer.mozilla.org/en-US/docs/Web/Guide/Performance/Using_web_workers)**.
 
-Operative is a small JS utility (~1.5k *gzipped*) for seamlessly creating Web Worker scripts. Its features include:
+Operative is a small JS utility (~1.8k *gzipped*) for seamlessly creating Web Worker scripts. Its features include:
 
  * Seamless API Authoring
  * Producing debuggable Worker Blobs
@@ -140,7 +140,21 @@ var myOperative = operative({
 });
 ```
 
-On a given operative module you can call your methods directly, e.g.
+To create an operative module with an internally asynchronous return:
+
+```js
+var myOperative = operative({
+	doX: function(a, b, c) {
+		var iAmDone = this.async();
+		// Example async stuff ...
+		setTimeout(function() {
+			iAmDone(/* The result */);
+		}, 100);
+	}
+})
+```
+
+On a given operative module you can call your methods directly (from the parent page), e.g.
 
 ```js
 myOperative.doX(function(result) {
@@ -175,3 +189,4 @@ $ grunt
 
  * 0.0.1 Initial
  * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
+ * 0.0.3 Support for asynchronous returning from within operartive methods (via `this.async()`).

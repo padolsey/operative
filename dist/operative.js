@@ -146,7 +146,7 @@
 				this.workerIsReady = true;
 				this._postQueudMessages();
 				return;
-			
+	
 			}
 
 			data = this._demarshal(data);
@@ -214,7 +214,7 @@
 			worker.addEventListener('message', function(e) {
 				_self._onWorkerMessage(e);
 			});
-			
+	
 			this._postWorkerMessage({
 				definitions: this.dataProperties
 			});
@@ -251,9 +251,24 @@
 
 				} else {
 					setTimeout(function() {
-						cb(
-							_self.module[methodName].apply(_self.module, args)
-						);
+
+						var isAsync = false;
+
+						_self.module.async = function() {
+							isAsync = true;
+							return cb;
+						};
+
+						var result = _self.module[methodName].apply(_self.module, args);
+
+						_self.module.async = function() {
+							throw new Error('Operative: async() called at odd time');
+						};
+
+						if (!isAsync) {
+							cb(result);
+						}
+
 					}, 1);
 				}
 			};
@@ -351,13 +366,33 @@ function workerBoilerScript() {
 			return;
 		}
 
+		var isAsync = false;
+
+		self.async = function() {
+			isAsync = true;
+			return function(r) {
+				returnResult(r);
+			};
+		};
+
 		var result = self[data.method].apply(self, data.args);
-		
-		postMessage({
-			cmd: 'result',
-			token: data.token,
-			result: result
-		});
+
+		// Clear so it's not accidentally used by other code
+		self.async = function() {
+			throw new Error('Operative: async() called at odd time');
+		};
+
+		if (!isAsync) {
+			returnResult(result);
+		}
+
+		function returnResult(res) {
+			postMessage({
+				cmd: 'result',
+				token: data.token,
+				result: res
+			});
+		}
 	});
 }
 
