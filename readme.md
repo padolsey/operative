@@ -107,8 +107,8 @@ Operative degrades in this order:
 
 *(higher is better/cooler)*
 
- * Full Worker via Blob & Transferrable-Object passing (Ch5+, FF4+, IE11+, Op11+, Sf5+)
- * Full Worker via Eval & Transferrable-Object passing (IE10)
+ * Full Worker via Blob & [Structured-Cloning](https://developer.mozilla.org/en-US/docs/Web/Guide/DOM/The_structured_clone_algorithm?redirectlocale=en-US&redirectslug=DOM%2FThe_structured_clone_algorithm) (Ch13+, FF8+, IE11+, Op11.5+, Sf5.1+)
+ * Full Worker via Eval & [Structured-Cloning](https://developer.mozilla.org/en-US/docs/Web/Guide/DOM/The_structured_clone_algorithm?redirectlocale=en-US&redirectslug=DOM%2FThe_structured_clone_algorithm) (IE10)
  * Full Worker via Blob & JSON marshalling *(???)*
  * Full Worker via Eval & JSON marshalling (Sf4)
  * No Worker: Regular JS called inline (*older browsers*)

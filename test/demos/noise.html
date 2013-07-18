@@ -1,0 +1,49 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Noisy Pixels Demo</title>
+<body>
+
+	<h1>Noisy Pixels</h1>
+
+	<script src="../../dist/operative.min.js"></script>
+
+	<script>
+		var NOISIFIER = operative({
+
+			process: function(imgData) {
+				var p = imgData.data;
+				for (var i = 0, l = p.length; i < l; i += 4) {
+					// Noisy pixels!
+					p[i+3] = 0 | Math.random() * 100 + 155; // alpha
+					p[i+2] = 100; // blue
+				}
+				return imgData;
+			}
+
+		});
+
+		var img = new Image;
+		img.onload = makeCanvas;
+		img.src = 'img.jpg';
+
+		function makeCanvas() {
+
+			var c = document.body.appendChild(document.createElement('canvas'));
+			var _ = c.getContext('2d');
+			c.width = 1000;
+			c.height = 619;
+
+			_.drawImage(img, 0, 0);
+
+			setInterval(function() {
+				var imgData = _.getImageData(0, 0, 1000, 619);
+				NOISIFIER.process(imgData, function(imgData) {
+					_.fillRect(0, 0, 100, 100);
+					_.putImageData(imgData, 0, 0);
+				});
+			}, 80);
+
+		}
+	</script>
+
+</body>
