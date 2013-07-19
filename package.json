@@ -4,7 +4,7 @@
   "description": "Operative: Inline Web-Worker Helper",
   "version": "0.0.3",
   "author": "James Padolsey (http://git.io/padolsey)",
-  "main": "dist/Operative.min.js",
+  "main": "dist/operative.min.js",
   "devDependencies": {
     "grunt-contrib-jshint": "0.1.1rc6",
     "grunt-contrib-uglify": "0.1.1rc6",
