@@ -9,7 +9,7 @@
  */
 (function() {
 
-	if (typeof window == 'undefined' && self.importScripts) {
+    if (typeof window == 'undefined' && self.importScripts) {
 		// I'm a worker! Run the boiler-script:
 		// (Operative itself is called in IE10 as a worker, to avoid SecurityErrors)
 		workerBoilerScript();
@@ -67,6 +67,15 @@
 
 		var _self = this;
 
+		if (typeof module === "function") {
+			var fn = module
+			module = {
+				method: function () {
+					fn.apply(this, arguments)
+				}
+			}
+		}
+
 		module.get = module.get || function(prop) {
 			return this[prop];
 		};
@@ -84,7 +93,9 @@
 		this.module = module;
 		this.dataProperties = {};
 
-		this.api = {};
+		var api = this.api = function () {
+			api.method.apply(api, arguments);
+		};
 		this.callbacks = {};
 
 		if (operative.hasWorkerSupport) {
@@ -121,7 +132,7 @@
 			for (var i in module) {
 				var property = module[i];
 				if (typeof property == 'function') {
-					script.push('	self["' + i.replace(/"/g, '\\"') + '"] = ' + property.toString() + ';');
+					script.push('   self["' + i.replace(/"/g, '\\"') + '"] = ' + property.toString() + ';');
 				} else {
 					dataProperties[i] = property;
 				}
@@ -159,7 +170,7 @@
 					if (data.token in this.callbacks) {
 						var cb = this.callbacks[data.token];
 						delete this.callbacks[data.token];
-						cb(data.result);
+						cb(null, data.result);
 					} else {
 						throw new Error('Operative: Unmatched token: ' + data.token);
 					}
@@ -266,7 +277,7 @@
 						};
 
 						if (!isAsync) {
-							cb(result);
+							cb(null, result);
 						}
 
 					}, 1);
@@ -397,4 +408,3 @@ function workerBoilerScript() {
 }
 
 }());
-
