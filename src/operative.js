@@ -53,7 +53,12 @@
 	operative.hasWorkerSupport = !!window.Worker;
 
 	// Expose:
-	window.operative = operative;
+	if (typeof module !== 'undefined' && module.exports) {
+		module.exports = operative;
+	} else {
+		window.operative = operative;
+	}
+	
 
 	operative.setSelfURL = function(url) {
 		opScriptURL = url;
