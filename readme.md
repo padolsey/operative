@@ -186,7 +186,8 @@ $ grunt
 ```
 
 ### Changelog
-
- * 0.0.1 Initial
- * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
  * 0.0.3 Support for asynchronous returning from within operartive methods (via `this.async()`).
+ * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
+ * 0.0.1 Initial
+
+
