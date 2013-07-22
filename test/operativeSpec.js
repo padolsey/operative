@@ -142,6 +142,59 @@ describe('Operative', function() {
 			});
 		});
 
+		describe('Promise API', function() {
+			describe('Operative', function() {
+				var op;
+				beforeEach(function() {
+					op = operative(function(beSuccessful) {
+						var deferred = this.deferred();
+						if (beSuccessful) {
+							return deferred.fulfil(873);
+						} else {
+							return deferred.reject(999);
+						}
+					});
+				})
+				it('Should return a promise', function() {
+					expect(op() instanceof operative.Promise).toBe(true);
+				});
+				describe('fulfil()', function() {
+					it('Should fulfil the exposed promise', function() {
+						var fulfilled = false;
+						runs(function() {
+							op(true).then(function(a) {
+								expect(a).toBe(873);
+								fulfilled = true;
+							}, function() {});
+						});
+						waitsFor(function() {
+							return fulfilled === true;
+						});
+					});
+				});
+				describe('reject()', function() {
+					it('Should reject the exposed promise', function() {
+						var rejected = false;
+						var fulfilled = false;
+						runs(function() {
+							op(false).then(function() {
+								fulfilled = true;
+							}, function(err) {
+								expect(err).toBe(999);
+								rejected = true;
+							});
+						});
+						waitsFor(function() {
+							return rejected === true;
+						});
+						runs(function() {
+							expect(fulfilled).toBe(false);
+						});
+					});
+				});
+			});
+		});
+
 	});
 
 	describe('Without Worker Support', function() {
