@@ -121,13 +121,15 @@ If you are looking to support this fully degraded state (honestly, only do it if
 
 Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4.0) via eval, and it requires `operative.js` or `operative.min.js` to be its own file and included in the page via a `<script>` tag. Or, alternatively, if its bundled with other JS, you'll have to have an additional `operative.js` and specify it *before creating an operative module* via `operative.setSelfURL('path/to/operative.js')` (this'll only generate a request where the aforementioned support is lacking). Due to the usage of eval in these cases it is recommended to debug your operatives in more capable browsers.
 
-### Operative API
+### Operative API Documentation
 
  * *{Function}* *operative*: A global function which creates a new Operative module with the passed methods/properties. Note: Non-function properties must be basic objects that can be passed to `JSON.stringify`.
  * *{Boolean}* *operative.hasWorkerSupport*: A boolean indicating whether both Blob and Worker support is detected.
  * *{Function}* *operative.setSelfURL*: Allows you to set the URL of the operative script. Use this if you want IE10 & Safari 4/5 support *and* you're not including operative by the conventional `<script src="operative.js"></script>`.
 
-To create an operative module:
+ #### Creating an Operative:
+
+To create an operative module pass an object of methods/properties:
 
 ```js
 var myOperative = operative({
@@ -140,30 +142,83 @@ var myOperative = operative({
 });
 ```
 
-To create an operative module with an internally asynchronous return:
+Or a single function to create a singular operative:
 
 ```js
-var myOperative = operative({
-	doX: function(a, b, c) {
-		var iAmDone = this.async();
-		// Example async stuff ...
-		setTimeout(function() {
-			iAmDone(/* The result */);
-		}, 100);
-	}
-})
+var myOperative = operative(function(a, b, c) {
+	
+});
+
+// Example call:
+myOperative(1, 2, 3, function() { /*callback*/ });
 ```
 
-On a given operative module you can call your methods directly (from the parent page), e.g.
+#### Returning results
+
+The most simple way to use operative is to pass in a callback function when calling an operative function and within the operative method returning the result directly:
 
 ```js
-myOperative.doX(function(result) {
-	// This function'll be called when doX() completes within the worker
-	result; // => Whatever doX() returns
+var combine = operative(function(foo, bar) {
+	return foo + bar;
+});
+
+combine('foo', 'bar', function() {
+	// This callback function will be called with
+	// the result from your operative function.
+	result; // => 'foobar'
 });
 ```
 
-And to destroy the operative (and thus its worker):
+To implement a basic asynchronous return, but with the same callback pattern, you can utilise `this.async()` within your operative:
+
+```js
+var combine = operative(function(foo, bar) {
+	var finish = this.async();
+	setTimeout(function() {
+		finish(foo + bar);
+	}, 1000); // example async
+});
+
+combine('foo', 'bar', function() {
+	result; // => 'foobar'
+});
+```
+
+#### Return via Promises
+
+If you don't pass a callback when calling an operative method, operative will assume you want a Promise. Note that operative will reference `operative.Promise` and will expect it to be a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises). *Operative does not come bundled with a Promise implementation.*
+
+```js
+var combine = operative(function(foo, bar) {
+	// Internally, use a Deferred:
+	var deferred = this.deferred();
+
+	// A deferred has two methods: fulfill & reject:
+
+	if (foo !== 'foo') {
+		// Error (Rejection)
+		deferred.reject('foo should be "foo"!');
+	} else {
+		// Success (Filfillment)
+		deferred.fulfill(foo + bar);
+	}
+});
+
+// Usage externally:
+var promise = combine('foo', 'bar');
+
+promise.then(function(value) {
+	// Fulfilled
+}, function(err) {
+	// Rejected
+});
+```
+
+**NOTE:** Operative will only give you a promise if you don't pass a callback *and* if `operative.Promise` is defined. By default `operative.Promise` will reference `window.Promise` (*native implementation if it exists*).
+
+#### Destroying an operative
+
+To destroy the operative (and thus its worker):
 
 ```js
 o.destroy();
@@ -190,3 +245,4 @@ $ grunt
  * 0.0.1 Initial
  * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
  * 0.0.3 Support for asynchronous returning from within operartive methods (via `this.async()`).
+ * 0.1.0 Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises)
