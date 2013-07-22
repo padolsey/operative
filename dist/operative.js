@@ -6,6 +6,8 @@
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
  * @version 0.0.2
+ * @contributors
+ *  James Padolsey
  */
 (function() {
 
@@ -280,6 +282,7 @@
 						}, 1);
 					} else if (operative.Promise) {
 						return new operative.Promise(function(deferred) {
+							deferred.fulfil = deferred.fulfill;
 							setTimeout(function() {
 								runInline(deferred);
 							}, 1);
@@ -424,24 +427,25 @@ function workerBoilerScript() {
 
 		self.deferred = function() {
 			isDeferred = true;
-			function fulfil(r) {
+			var def = {};
+			function fulfill(r) {
 				returnResult({
 					isDeferred: true,
 					action: 'fulfill',
 					arg: r
 				});
+				return def;
 			}
-			return {
-				fulfil: fulfil,
-				fulfill: fulfil,
-				reject: function(r) {
-					returnResult({
-						isDeferred: true,
-						action: 'reject',
-						arg: r
-					});
-				}
-			};
+			function reject(r) {
+				returnResult({
+					isDeferred: true,
+					action: 'reject',
+					arg: r
+				});
+			}
+			def.fulfil = def.fulfill = fulfill;
+			def.reject = reject;
+			return def;
 		};
 
 		var result = self[data.method].apply(self, data.args);
