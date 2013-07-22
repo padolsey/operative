@@ -223,6 +223,9 @@ describe('Operative', function() {
 				},
 				isItAWorker: function() {
 					return this.isWorker;
+				},
+				isItAWorker_Promisable: function() {
+					this.deferred().fulfil(this.isWorker);
 				}
 			});
 
@@ -234,10 +237,10 @@ describe('Operative', function() {
 			});
 
 			async(function(nxt) {
-				o.isItAWorker(function(isWorker) {
+				o.isItAWorker_Promisable().then(function(isWorker) {
 					expect(isWorker).toBe(false);
 					nxt();
-				});
+				}, function() {});
 			});
 
 			async(function(nxt) {
