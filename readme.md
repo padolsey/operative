@@ -242,7 +242,13 @@ $ grunt
 
 ### Changelog
 
- * 0.0.1 Initial
- * 0.0.2 Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
- * 0.0.3 Support for asynchronous returning from within operartive methods (via `this.async()`).
- * 0.1.0 Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises)
+ * 0.1.0 (25 Jul 2013) Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises)
+ * 0.0.3 (18 Jul 2013) Support for asynchronous returning from within operartive methods (via `this.async()`).
+ * 0.0.2 (12 Jul 2013) Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
+ * 0.0.1 (11 Jul 2013) Initial
+
+ ### Contributors
+
+  * [James Padolsey](https://github.com/padolsey)
+  * [Evan Worley](https://github.com/evanworley)
+  * [Raynos](https://github.com/Raynos)
