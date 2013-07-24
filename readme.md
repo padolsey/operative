@@ -249,7 +249,7 @@ $ grunt
  * 0.0.2 (12 Jul 2013) Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
  * 0.0.1 (11 Jul 2013) Initial
 
- ### Contributors
+### Contributors
 
   * [James Padolsey](https://github.com/padolsey)
   * [Evan Worley](https://github.com/evanworley)
