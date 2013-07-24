@@ -124,6 +124,8 @@ Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4
 ### Operative API Documentation
 
  * *{Function}* *operative*: A global function which creates a new Operative module with the passed methods/properties. Note: Non-function properties must be basic objects that can be passed to `JSON.stringify`.
+  * Pass an object of methods, e.g. `operative({ method: function() {...} ... });`
+  * Or pass a single function, e.g. `operative(function() {})` (*in which case a single function is returned*)
  * *{Boolean}* *operative.hasWorkerSupport*: A boolean indicating whether both Blob and Worker support is detected.
  * *{Function}* *operative.setSelfURL*: Allows you to set the URL of the operative script. Use this if you want IE10 & Safari 4/5 support *and* you're not including operative by the conventional `<script src="operative.js"></script>`.
 
@@ -242,7 +244,7 @@ $ grunt
 
 ### Changelog
 
- * 0.1.0 (25 Jul 2013) Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises)
+ * 0.1.0 (25 Jul 2013) Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises). Also added support for `operative(Function)` which returns a single function.
  * 0.0.3 (18 Jul 2013) Support for asynchronous returning from within operartive methods (via `this.async()`).
  * 0.0.2 (12 Jul 2013) Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
  * 0.0.1 (11 Jul 2013) Initial
