@@ -6,10 +6,12 @@
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
  * @version 0.0.2
+ * @contributors
+ *  James Padolsey
  */
 (function() {
 
-	if (typeof window == 'undefined' && self.importScripts) {
+    if (typeof window == 'undefined' && self.importScripts) {
 		// I'm a worker! Run the boiler-script:
 		// (Operative itself is called in IE10 as a worker, to avoid SecurityErrors)
 		workerBoilerScript();
@@ -52,8 +54,15 @@
 	// Indicates whether operatives will run within workers:
 	operative.hasWorkerSupport = !!window.Worker;
 
+	operative.Promise = window.Promise;
+
 	// Expose:
-	window.operative = operative;
+	if (typeof module !== 'undefined' && module.exports) {
+		module.exports = operative;
+	} else {
+		window.operative = operative;
+	}
+	
 
 	operative.setSelfURL = function(url) {
 		opScriptURL = url;
@@ -66,6 +75,14 @@
 	function Operative(module) {
 
 		var _self = this;
+
+		if (typeof module == 'function') {
+			// Allow a single function to be passed.
+			var o = new Operative({ main: module });
+			return function() {
+				return o.main.apply(o, arguments);
+			};
+		}
 
 		module.get = module.get || function(prop) {
 			return this[prop];
@@ -86,6 +103,7 @@
 
 		this.api = {};
 		this.callbacks = {};
+		this.deferreds = {};
 
 		if (operative.hasWorkerSupport) {
 			this._setupWorker();
@@ -121,7 +139,7 @@
 			for (var i in module) {
 				var property = module[i];
 				if (typeof property == 'function') {
-					script.push('	self["' + i.replace(/"/g, '\\"') + '"] = ' + property.toString() + ';');
+					script.push('   self["' + i.replace(/"/g, '\\"') + '"] = ' + property.toString() + ';');
 				} else {
 					dataProperties[i] = property;
 				}
@@ -146,23 +164,31 @@
 				this.workerIsReady = true;
 				this._postQueudMessages();
 				return;
-	
+
 			}
 
 			data = this._demarshal(data);
 
 			switch (data.cmd) {
-				case 'console': 
+				case 'console':
 					window.console && window.console[data.method].apply(window.console, data.args);
 					break;
 				case 'result':
-					if (data.token in this.callbacks) {
-						var cb = this.callbacks[data.token];
-						delete this.callbacks[data.token];
-						cb(data.result);
-					} else {
-						throw new Error('Operative: Unmatched token: ' + data.token);
+
+					var callback = this.callbacks[data.token];
+					var deferred = this.deferreds[data.token];
+
+					delete this.callbacks[data.token];
+					delete this.deferreds[data.token];
+
+					var deferredAction = data.result && data.result.isDeferred && data.result.action;
+
+					if (deferred && deferredAction) {
+						deferred[deferredAction](data.result.arg);
+					} else if (callback) {
+						callback(data.result);
 					}
+
 					break;
 			}
 		},
@@ -214,7 +240,7 @@
 			worker.addEventListener('message', function(e) {
 				_self._onWorkerMessage(e);
 			});
-	
+
 			this._postWorkerMessage({
 				definitions: this.dataProperties
 			});
@@ -233,43 +259,73 @@
 
 				var token = ++_self._curToken;
 				var args = slice.call(arguments);
-				var cb = args.pop();
+				var cb = typeof args[args.length - 1] == 'function' && args.pop();
 
-				if (typeof cb != 'function') {
-					throw new TypeError('Operative: Expected last argument to be Function (callback)');
+				if (!cb && !operative.Promise) {
+					throw new Error(
+						'Operative: No callback has been passed. Assumed that you want a promise. ' +
+						'But `operative.Promise` is null. Please provide Promise polyfill/lib.'
+					);
 				}
 
 				if (operative.hasWorkerSupport) {
 
+					if (cb) {
+						_self.callbacks[token] = cb;
+						sendToWorker();
+					} else if (operative.Promise) {
+						return new operative.Promise(function(deferred) {
+							_self.deferreds[token] = deferred;
+							sendToWorker();
+						});
+					}
+
+				} else {
+					if (cb) {
+						setTimeout(function() {
+							runInline();
+						}, 1);
+					} else if (operative.Promise) {
+						return new operative.Promise(function(deferred) {
+							deferred.fulfil = deferred.fulfill;
+							setTimeout(function() {
+								runInline(deferred);
+							}, 1);
+						});
+					}
+				}
+
+				function runInline(deferred) {
+
+					var isAsync = false;
+
+					_self.module.async = function() {
+						isAsync = true;
+						return cb;
+					};
+
+					_self.module.deferred = function() {
+						return deferred;
+					};
+
+					var result = _self.module[methodName].apply(_self.module, args);
+
+					_self.module.async = function() {
+						throw new Error('Operative: async() called at odd time');
+					};
+
+					if (!isAsync && !deferred) {
+						cb(result);
+					}
+
+				}
+
+				function sendToWorker() {
 					_self._postWorkerMessage({
 						method: methodName,
 						args: args,
 						token: token
 					});
-
-					_self.callbacks[token] = cb;
-
-				} else {
-					setTimeout(function() {
-
-						var isAsync = false;
-
-						_self.module.async = function() {
-							isAsync = true;
-							return cb;
-						};
-
-						var result = _self.module[methodName].apply(_self.module, args);
-
-						_self.module.async = function() {
-							throw new Error('Operative: async() called at odd time');
-						};
-
-						if (!isAsync) {
-							cb(result);
-						}
-
-					}, 1);
 				}
 			};
 
@@ -367,22 +423,47 @@ function workerBoilerScript() {
 		}
 
 		var isAsync = false;
+		var isDeferred = false;
 
 		self.async = function() {
 			isAsync = true;
-			return function(r) {
-				returnResult(r);
-			};
+			return function(r) { returnResult(r); };
+		};
+
+		self.deferred = function() {
+			isDeferred = true;
+			var def = {};
+			function fulfill(r) {
+				returnResult({
+					isDeferred: true,
+					action: 'fulfill',
+					arg: r
+				});
+				return def;
+			}
+			function reject(r) {
+				returnResult({
+					isDeferred: true,
+					action: 'reject',
+					arg: r
+				});
+			}
+			def.fulfil = def.fulfill = fulfill;
+			def.reject = reject;
+			return def;
 		};
 
 		var result = self[data.method].apply(self, data.args);
 
-		// Clear so it's not accidentally used by other code
+		// Clear async/deferred so they're not accidentally used by other code
 		self.async = function() {
 			throw new Error('Operative: async() called at odd time');
 		};
+		self.deferred = function() {
+			throw new Error('Operative: deferred() called at odd time');
+		};
 
-		if (!isAsync) {
+		if (!isAsync && !isDeferred) {
 			returnResult(result);
 		}
 
@@ -397,4 +478,3 @@ function workerBoilerScript() {
 }
 
 }());
-
