@@ -37,12 +37,21 @@
 		return true;
 	}());
 
+	/**
+	 * Provide Object.create shim
+	 */
+	var objCreate = Object.create || function(o) {
+		function F() {}
+		F.prototype = o;
+		return new F();
+	};
+
 	function makeBlobURI(script) {
 		var blob;
 
 		try {
 			blob = new Blob([script], { type: 'text/javascript' });
-		} catch (e) {
+		} catch (e) { 
 			blob = new BlobBuilder();
 			blob.append(script);
 			blob = blob.getBlob();
@@ -68,6 +77,7 @@
 		opScriptURL = url;
 	};
 
+
 	/**
 	 * Operative: Exposed Operative Constructor
 	 * @param {Object} module Object containing methods/properties
@@ -75,14 +85,6 @@
 	function Operative(module) {
 
 		var _self = this;
-
-		if (typeof module == 'function') {
-			// Allow a single function to be passed.
-			var o = new Operative({ main: module });
-			return function() {
-				return o.main.apply(o, arguments);
-			};
-		}
 
 		module.get = module.get || function(prop) {
 			return this[prop];
@@ -92,24 +94,21 @@
 			return this[prop] = value;
 		};
 
-		this._msgQueue = [];
 		this._curToken = 0;
+		this._queue = [];
 
 		this.isDestroyed = false;
-		this.workerIsReady = false;
+		this.isContextReady = false;
 
 		this.module = module;
+
 		this.dataProperties = {};
 
 		this.api = {};
 		this.callbacks = {};
 		this.deferreds = {};
 
-		if (operative.hasWorkerSupport) {
-			this._setupWorker();
-		} else {
-			this._setupFallback();
-		}
+		this._setup();
 
 		for (var methodName in module) {
 			if (hasOwn.call(module, methodName)) {
@@ -124,12 +123,30 @@
 			return _self.destroy();
 		};
 
-		return this.api;
 	}
 
 	Operative.prototype = {
 
-		_buildWorkerScript: function(doIncludeBoilerScript) {
+		_marshal: function(v) {
+			return v;
+		},
+
+		_demarshal: function(v) {
+			return v;
+		},
+
+		_enqueue: function(fn) {
+			this._queue.push(fn);
+		},
+
+		_dequeueAll: function() {
+			for (var i = 0, l = this._queue.length; i < l; ++i) {
+				this._queue[i].call(this);
+			}
+			this._queue = [];
+		},
+
+		_buildContextScript: function(boilerScript) {
 
 			var script = [];
 			var module = this.module;
@@ -146,118 +163,22 @@
 			}
 
 			return script.join('\n') + (
-				doIncludeBoilerScript ? '\n(' + workerBoilerScript.toString() + '());' : ''
+				boilerScript ? '\n(' + boilerScript.toString() + '());' : ''
 			);
-
-		},
-
-		_onWorkerMessage: function(e) {
-			var data = e.data;
-
-			if (typeof data === 'string' && data.indexOf('pingback') === 0) {
-				if (data === 'pingback:objectTransferSupport=NO') {
-					// No transferrableObj support (marshal JSON from now on):
-					this._marshal = function(o) { return JSON.stringify(o); };
-					this._demarshal = function(o) { return JSON.parse(o); };
-				}
-
-				this.workerIsReady = true;
-				this._postQueudMessages();
-				return;
-
-			}
-
-			data = this._demarshal(data);
-
-			switch (data.cmd) {
-				case 'console':
-					window.console && window.console[data.method].apply(window.console, data.args);
-					break;
-				case 'result':
-
-					var callback = this.callbacks[data.token];
-					var deferred = this.deferreds[data.token];
-
-					delete this.callbacks[data.token];
-					delete this.deferreds[data.token];
-
-					var deferredAction = data.result && data.result.isDeferred && data.result.action;
-
-					if (deferred && deferredAction) {
-						deferred[deferredAction](data.result.args[0]);
-					} else if (callback) {
-						callback.apply(this, data.result.args);
-					}
-
-					break;
-			}
-		},
-
-		_marshal: function(v) {
-			return v;
-		},
-
-		_demarshal: function(v) {
-			return v;
-		},
-
-		_postWorkerMessage: function(msg) {
-			if (!this.workerIsReady) {
-				this._msgQueue.push(msg);
-				return;
-			}
-			return this.worker.postMessage(this._marshal(msg));
-		},
-
-		_postQueudMessages: function() {
-			var msgQueue = this._msgQueue;
-			for (var i = 0, l = msgQueue.length; i < l; ++i) {
-				this._postWorkerMessage( msgQueue[i] );
-			}
-			this._msgQueue = null;
-		},
-
-		_setupWorker: function() {
-
-			var _self = this;
-
-			var worker;
-
-			if (workerViaBlobSupport) {
-				worker = this.worker = new Worker( makeBlobURI(this._buildWorkerScript(true)) );
-			}  else {
-				if (!opScriptURL) {
-					throw new Error('Operaritve: No operative.js URL available. Please set via operative.setSelfURL(...)');
-				}
-				worker = this.worker = new Worker( opScriptURL );
-				// Marshal-agnostic initial message is boiler-code:
-				// (We don't yet know if transferrableObjs are supported so we send a string)
-				worker.postMessage('EVAL|' + this._buildWorkerScript(false));
-			}
-
-			worker.postMessage(['PING']); // Initial PING
-
-			worker.addEventListener('message', function(e) {
-				_self._onWorkerMessage(e);
-			});
-
-			this._postWorkerMessage({
-				definitions: this.dataProperties
-			});
 
 		},
 
 		_createExposedMethod: function(methodName) {
 
-			var _self = this;
+			var self = this;
 
 			this.api[methodName] = function() {
 
-				if (_self.isDestroyed) {
+				if (self.isDestroyed) {
 					throw new Error('Operative: Cannot run method. Operative has already been destroyed');
 				}
 
-				var token = ++_self._curToken;
+				var token = ++self._curToken;
 				var args = slice.call(arguments);
 				var cb = typeof args[args.length - 1] == 'function' && args.pop();
 
@@ -268,92 +189,281 @@
 					);
 				}
 
-				if (operative.hasWorkerSupport) {
+				if (cb) {
 
-					if (cb) {
-						_self.callbacks[token] = cb;
-						sendToWorker();
-					} else if (operative.Promise) {
-						return new operative.Promise(function(deferred) {
-							_self.deferreds[token] = deferred;
-							sendToWorker();
-						});
-					}
+					self.callbacks[token] = cb;
+	
+					// Ensure either context runs the method async:
+					setTimeout(function() {
+						runMethod();
+					}, 1);
 
-				} else {
-					if (cb) {
-						setTimeout(function() {
-							runInline();
-						}, 1);
-					} else if (operative.Promise) {
-						return new operative.Promise(function(deferred) {
-							deferred.fulfil = deferred.fulfill;
-							setTimeout(function() {
-								runInline(deferred);
-							}, 1);
-						});
-					}
-				}
+				} else if (operative.Promise) {
 
-				function runInline(deferred) {
+					// No Callback -- Promise used:
 
-					var isAsync = false;
-
-					_self.module.async = function() {
-						isAsync = true;
-						return cb;
-					};
-
-					_self.module.deferred = function() {
-						return deferred;
-					};
-
-					var result = _self.module[methodName].apply(_self.module, args);
-
-					_self.module.async = function() {
-						throw new Error('Operative: async() called at odd time');
-					};
-
-					if (!isAsync && !deferred) {
-						cb(result);
-					}
-
-				}
-
-				function sendToWorker() {
-					_self._postWorkerMessage({
-						method: methodName,
-						args: args,
-						token: token
+					return new operative.Promise(function(deferred) {
+						deferred.fulfil = deferred.fulfill;
+						self.deferreds[token] = deferred;
+						runMethod();
 					});
+
 				}
+
+				function runMethod() {
+					if (self.isContextReady) {
+						self._runMethod(methodName, token, args);
+					} else {
+						self._enqueue(runMethod);
+					}
+				}
+
 			};
 
 		},
 
-		_setupFallback: function() {
-			this.module.isWorker = false;
-			this.module.setup && this.module.setup();
-		},
-
 		destroy: function() {
 			this.isDestroyed = true;
-			if (this.worker) {
-				this.worker.terminate();
-			}
 		}
+	};
+
+
+	/**
+	 * Operative Worker
+	 */
+	Operative.Worker = function Worker(module) {
+		this._msgQueue = [];
+		Operative.apply(this, arguments);
+	};
+
+	var WorkerProto = Operative.Worker.prototype = objCreate(Operative.prototype);
+
+	WorkerProto._onWorkerMessage = function(e) {
+		var data = e.data;
+
+		if (typeof data === 'string' && data.indexOf('pingback') === 0) {
+			if (data === 'pingback:objectTransferSupport=NO') {
+				// No transferrableObj support (marshal JSON from now on):
+				this._marshal = function(o) { return JSON.stringify(o); };
+				this._demarshal = function(o) { return JSON.parse(o); };
+			}
+
+			this.isContextReady = true;
+			this._dequeueAll();
+			return;
+
+		}
+
+		data = this._demarshal(data);
+
+		switch (data.cmd) {
+			case 'console':
+				window.console && window.console[data.method].apply(window.console, data.args);
+				break;
+			case 'result':
+
+				var callback = this.callbacks[data.token];
+				var deferred = this.deferreds[data.token];
+
+				delete this.callbacks[data.token];
+				delete this.deferreds[data.token];
+
+				var deferredAction = data.result && data.result.isDeferred && data.result.action;
+
+				if (deferred && deferredAction) {
+					deferred[deferredAction](data.result.args[0]);
+				} else if (callback) {
+					callback.apply(this, data.result.args);
+				}
+
+				break;
+		}
+	};
+
+	WorkerProto._setup = function() {
+		var self = this;
+
+		var worker;
+		var script = this._buildContextScript(workerBoilerScript);
+
+		if (this.dependencies) {
+			script = 'importScripts("' + this.dependencies.join('", "') + '");\n' + script;
+		}
+
+		if (workerViaBlobSupport) {
+			worker = this.worker = new Worker( makeBlobURI(script) );
+		}  else {
+			if (!opScriptURL) {
+				throw new Error('Operaritve: No operative.js URL available. Please set via operative.setSelfURL(...)');
+			}
+			worker = this.worker = new Worker( opScriptURL );
+			// Marshal-agnostic initial message is boiler-code:
+			// (We don't yet know if transferrableObjs are supported so we send a string)
+			worker.postMessage('EVAL|' + this._buildWorkerScript(null));
+		}
+
+		worker.postMessage(['PING']); // Initial PING
+
+		worker.addEventListener('message', function(e) {
+			self._onWorkerMessage(e);
+		});
+
+		this._postMessage({
+			definitions: this.dataProperties
+		});
+	};
+
+	WorkerProto._postMessage = function(msg) {
+		return this.worker.postMessage(this._marshal(msg));
+	};
+
+	WorkerProto._runMethod = function(methodName, token, args) {
+		this._postMessage({
+			method: methodName,
+			args: args,
+			token: token
+		});
+	};
+
+	WorkerProto.destroy = function() {
+		this.worker.terminate();
+		Operative.prototype.destroy.call(this);
+	};
+
+
+	/**
+	 * Operative IFrame
+	 */
+	Operative.Iframe = function Iframe(module) {
+		Operative.apply(this, arguments);
+	};
+
+	var IframeProto = Operative.Iframe.prototype = objCreate(Operative.prototype);
+
+	IframeProto._setup = function() {
+
+		var self = this;
+
+		this.module.isWorker = false;
+
+		var iframe = this.iframe = document.body.appendChild(
+			document.createElement('iframe')
+		);
+
+		iframe.style.display = 'none';
+
+		var iWin = this.iframeWindow = iframe.contentWindow;
+		var iDoc = iWin.document; 
+
+		iDoc.open();
+		iDoc.close();
+
+		var script = iDoc.createElement('script');
+		var js = self._buildContextScript(iframeBoilerScript);
+
+		if (script.text !== void 0) {
+			script.text = js;
+		} else {
+			script.innerHTML = js;
+		}
+
+		iDoc.documentElement.appendChild(script);
+
+		for (var i in self.dataProperties) {
+			iWin[i] = self.dataProperties[i];
+		}
+
+		self.isContextReady = true;
+		self._dequeueAll();
+
+	};
+
+	IframeProto._runMethod = function(methodName, token, args) {
+		var callback = this.callbacks[token];
+		var deferred = this.deferreds[token];
+		delete this.callbacks[token];
+		delete this.deferreds[token];
+		this.iframeWindow.__run__(methodName, args, callback, deferred);
+	};
+
+	IframeProto.destroy = function() {
+		this.iframe.parentNode.removeChild(this.iframe);
+		Operative.prototype.destroy.call(this);
 	};
 
 	operative.Operative = Operative;
 
-	function operative(methods) {
-		return new Operative(methods);
+	/**
+	 * Exposed operative factory
+	 */
+	function operative(module) {
+
+		var OperativeContext = operative.hasWorkerSupport ?
+			Operative.Worker : Operative.Iframe;
+
+		if (typeof module == 'function') {
+			// Allow a single function to be passed.
+			var o = new OperativeContext({ main: module });
+			return function() {
+				return o.api.main.apply(o, arguments);
+			};
+		}
+
+		return new OperativeContext(module).api;
+
 	}
 
 /**
+ * The boilerplae for the Iframe Context
+ * NOTE:
+ *  this'll be executed within an iframe, not here.
+ *  Indented @ Zero to make nicer debug code within worker
+ */
+function iframeBoilerScript() {
+
+	// Called from parent-window:
+	window.__run__ = function(methodName, args, cb, deferred) {
+		
+		var isAsync = false;
+		var isDeferred = false;
+
+		window.async = function() {
+			isAsync = true;
+			return cb;
+		};
+
+		window.deferred = function() {
+			isDeferred = true;
+			return deferred;
+		};
+
+		if (cb) {
+			args.push(cb);
+		}
+
+		var result = window[methodName].apply(window, args);
+
+		window.async = function() {
+			throw new Error('Operative: async() called at odd time');
+		};
+
+		window.deferred = function() {
+			throw new Error('Operative: deferred() called at odd time');
+		};
+
+
+		if (!isDeferred && !isAsync && result !== void 0) {
+			// Deprecated direct-returning as of 0.2.0
+			cb(result);
+		}
+	};
+}
+
+/**
  * The boilerplate for the Worker Blob
- * (Be warned: this'll be executed within a worker, not here.)
- * Note: Indented @ Zero to make nicer debug code within worker :)
+ * NOTE:
+ *  this'll be executed within an iframe, not here.
+ *  Indented @ Zero to make nicer debug code within worker
  */
 function workerBoilerScript() {
 
@@ -421,7 +531,6 @@ function workerBoilerScript() {
 			for (var i in defs) {
 				self[i] = defs[i];
 			}
-			self.setup && self.setup();
 			return;
 		}
 
