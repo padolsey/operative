@@ -184,9 +184,9 @@
 					var deferredAction = data.result && data.result.isDeferred && data.result.action;
 
 					if (deferred && deferredAction) {
-						deferred[deferredAction](data.result.arg);
+						deferred[deferredAction](data.result.args[0]);
 					} else if (callback) {
-						callback(data.result);
+						callback.apply(this, data.result.args);
 					}
 
 					break;
@@ -412,6 +412,9 @@ function workerBoilerScript() {
 		}
 
 		var defs = data.definitions;
+		var isDeferred = false;
+		var isAsync = false;
+		var args = data.args;
 
 		if (defs) {
 			// Initial definitions:
@@ -422,12 +425,16 @@ function workerBoilerScript() {
 			return;
 		}
 
-		var isAsync = false;
-		var isDeferred = false;
+		args.push(function() {
+			// Callback function to be passed to operative method
+			returnResult({
+				args: [].slice.call(arguments)
+			});
+		});
 
-		self.async = function() {
+		self.async = function() { // Async deprecated as of 0.2.0
 			isAsync = true;
-			return function(r) { returnResult(r); };
+			return function() { returnResult({ args: [].slice.call(arguments) }); };
 		};
 
 		self.deferred = function() {
@@ -437,7 +444,7 @@ function workerBoilerScript() {
 				returnResult({
 					isDeferred: true,
 					action: 'fulfill',
-					arg: r
+					args: [r]
 				});
 				return def;
 			}
@@ -445,7 +452,7 @@ function workerBoilerScript() {
 				returnResult({
 					isDeferred: true,
 					action: 'reject',
-					arg: r
+					args: [r]
 				});
 			}
 			def.fulfil = def.fulfill = fulfill;
@@ -453,19 +460,23 @@ function workerBoilerScript() {
 			return def;
 		};
 
-		var result = self[data.method].apply(self, data.args);
+		// Call actual operative method:
+		var result = self[data.method].apply(self, args);
 
-		// Clear async/deferred so they're not accidentally used by other code
-		self.async = function() {
-			throw new Error('Operative: async() called at odd time');
-		};
+		if (!isDeferred && !isAsync && result !== void 0) {
+			// Deprecated direct-returning as of 0.2.0
+			returnResult({
+				args: [result]
+			});
+		}
+
 		self.deferred = function() {
 			throw new Error('Operative: deferred() called at odd time');
 		};
 
-		if (!isAsync && !isDeferred) {
-			returnResult(result);
-		}
+		self.async = function() { // Async deprecated as of 0.2.0
+			throw new Error('Operative: async() called at odd time');
+		};
 
 		function returnResult(res) {
 			postMessage({
@@ -473,6 +484,13 @@ function workerBoilerScript() {
 				token: data.token,
 				result: res
 			});
+			// Override with error-thrower if we've already returned:
+			returnResult = function() {
+				throw new Error(
+					'Operative: You are attempting to return via different means. ' +
+					'Either call cb(), return directly [deprecated], use async() [deprecated], or use deferred().'
+				);
+			}
 		}
 	});
 }

@@ -13,14 +13,14 @@ describe('Operative', function() {
 
 		it('Works with basic calculator', function() {
 			var o = operative({
-				add: function(a, b) {
-					return a + b;
+				add: function(a, b, cb) {
+					cb(a + b);
 				},
-				subtract: function(a, b) {
-					return a - b;
+				subtract: function(a, b, cb) {
+					cb(a - b);
 				},
-				isItAWorker: function() {
-					return this.isWorker;
+				isItAWorker: function(cb) {
+					cb(this.isWorker);
 				}
 			});
 
@@ -50,8 +50,9 @@ describe('Operative', function() {
 		describe('Callback', function() {
 			it('Is called and removed correctly', function() {
 				var o = operative({
-					longAction: function() {
+					longAction: function(cb) {
 						for (var i = 0; i < 10000000; ++i);
+						cb();
 					}
 				});
 				var callback = jasmine.createSpy('callback');
@@ -111,21 +112,21 @@ describe('Operative', function() {
 			it('Each complete asynchronously', function() {
 				var s = [];
 				var a = operative({
-					run: function() {
+					run: function(cb) {
 						for (var i = 0; i < 1000000; ++i);
-						return 'A';
+						cb('A');
 					}
 				});
 				var b = operative({
-					run: function() {
+					run: function(cb) {
 						for (var i = 0; i < 1000; ++i);
-						return 'B';
+						cb('B');
 					}
 				});
 				var c = operative({
-					run: function() {
+					run: function(cb) {
 						for (var i = 0; i < 1; ++i);
-						return 'C';
+						cb('C');
 					}
 				});
 				function add(v) { s.push(v); }
@@ -146,12 +147,12 @@ describe('Operative', function() {
 			describe('Operative', function() {
 				var op;
 				beforeEach(function() {
-					op = operative(function(beSuccessful) {
+					op = operative(function(beSuccessful, cb) {
 						var deferred = this.deferred();
 						if (beSuccessful) {
-							return deferred.fulfil(873);
+							deferred.fulfil(873);
 						} else {
-							return deferred.reject(999);
+							deferred.reject(999);
 						}
 					});
 				})
