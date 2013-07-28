@@ -379,11 +379,20 @@
 	};
 
 	IframeProto._runMethod = function(methodName, token, args) {
+		var self = this;
 		var callback = this.callbacks[token];
 		var deferred = this.deferreds[token];
 		delete this.callbacks[token];
 		delete this.deferreds[token];
-		this.iframeWindow.__run__(methodName, args, callback, deferred);
+		this.iframeWindow.__run__(methodName, args, function() {
+			var cb = callback;
+			if (cb) {
+				callback = null;
+				cb.apply(self, arguments);
+			} else {
+				throw new Error('Operative: You have already returned.');
+			}
+		}, deferred);
 	};
 
 	IframeProto.destroy = function() {
@@ -423,7 +432,7 @@ function iframeBoilerScript() {
 
 	// Called from parent-window:
 	window.__run__ = function(methodName, args, cb, deferred) {
-		
+
 		var isAsync = false;
 		var isDeferred = false;
 
@@ -595,11 +604,8 @@ function workerBoilerScript() {
 			});
 			// Override with error-thrower if we've already returned:
 			returnResult = function() {
-				throw new Error(
-					'Operative: You are attempting to return via different means. ' +
-					'Either call cb(), return directly [deprecated], use async() [deprecated], or use deferred().'
-				);
-			}
+				throw new Error('Operative: You have already returned.');
+			};
 		}
 	});
 }

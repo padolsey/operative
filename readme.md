@@ -26,8 +26,8 @@ An Operative module is defined as an object containing properties/methods:
 
 ```js
 var calculator = operative({
-	add: function(a, b) {
-		return a + b;
+	add: function(a, b, cb) {
+		cb( a + b );
 	}
 });
 ```
@@ -53,7 +53,7 @@ var something = 123;
 
 var myWorker = operative({
 	doStuff: function() {
-		return something + 456;
+		something += 456;
 	}
 });
 ```
@@ -66,7 +66,7 @@ Instead you can do:
 var myWorker = operative({
 	something: 123,
 	doStuff: function() {
-		return this.something + 456;
+		this.something += 456;
 	}
 });
 ```
@@ -76,13 +76,13 @@ var myWorker = operative({
 ```js
 var craziness = operative({
 
-	doCrazy: function() {
+	doCrazy: function(cb) {
 
 		console.time('Craziness');
 		for (var i = 0; i < 10000000000; ++i);
 		console.timeEnd('Craziness');
 
-		return 'I am done!';
+		cb('I am done!');
 	}
 
 });
@@ -135,10 +135,10 @@ To create an operative module pass an object of methods/properties:
 
 ```js
 var myOperative = operative({
-	doX: function(a, b, c) {
+	doX: function(a, b, c, callback) {
 		// ...
 	},
-	doY: function(a, b, c) {
+	doY: function(a, b, c, callback) {
 		// ...
 	}
 });
@@ -147,8 +147,9 @@ var myOperative = operative({
 Or a single function to create a singular operative:
 
 ```js
-var myOperative = operative(function(a, b, c) {
-	
+var myOperative = operative(function(a, b, c, callback) {
+	// Send the result to the parent page:
+	callback(...);
 });
 
 // Example call:
@@ -157,31 +158,16 @@ myOperative(1, 2, 3, function() { /*callback*/ });
 
 #### Returning results
 
-The most simple way to use operative is to pass in a callback function when calling an operative function and within the operative method returning the result directly:
+The most simple way to use operative is to pass in a callback function when calling an operative function and within the operative method call the callback with your result:
 
 ```js
-var combine = operative(function(foo, bar) {
-	return foo + bar;
+var combine = operative(function(foo, bar, callback) {
+	callback(foo + bar);
 });
 
 combine('foo', 'bar', function() {
 	// This callback function will be called with
 	// the result from your operative function.
-	result; // => 'foobar'
-});
-```
-
-To implement a basic asynchronous return, but with the same callback pattern, you can utilise `this.async()` within your operative:
-
-```js
-var combine = operative(function(foo, bar) {
-	var finish = this.async();
-	setTimeout(function() {
-		finish(foo + bar);
-	}, 1000); // example async
-});
-
-combine('foo', 'bar', function() {
 	result; // => 'foobar'
 });
 ```
