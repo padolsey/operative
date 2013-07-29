@@ -11,9 +11,10 @@
  */
 (function() {
 
-    if (typeof window == 'undefined' && self.importScripts) {
+	if (typeof window == 'undefined' && self.importScripts) {
 		// I'm a worker! Run the boiler-script:
-		// (Operative itself is called in IE10 as a worker, to avoid SecurityErrors)
+		// (Operative itself is called in IE10 as a worker,
+		//  to avoid SecurityErrors)
 		workerBoilerScript();
 		return;
 	}
@@ -24,6 +25,15 @@
 	var scripts = document.getElementsByTagName('script');
 	var opScript = scripts[scripts.length - 1];
 	var opScriptURL = /operative/.test(opScript.src) && opScript.src;
+
+	// Default base URL (to be prepended to relative dependency URLs)
+	// is current page's parent dir:
+	var baseURL = (
+		location.protocol + '//' +
+		location.hostname +
+		(location.port?':'+location.port:'') +
+		location.pathname
+	).replace(/[^\/]+$/, '');
 
 	var URL = window.URL || window.webkitURL;
 	var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
@@ -77,12 +87,19 @@
 		opScriptURL = url;
 	};
 
+	operative.setBaseURL = function(base) {
+		baseURL = base;
+	};
+
+	operative.getBaseURL = function() {
+		return baseURL;
+	};
 
 	/**
 	 * Operative: Exposed Operative Constructor
 	 * @param {Object} module Object containing methods/properties
 	 */
-	function Operative(module) {
+	function Operative(module, dependencies) {
 
 		var _self = this;
 
@@ -101,13 +118,14 @@
 		this.isContextReady = false;
 
 		this.module = module;
+		this.dependencies = dependencies || [];
 
 		this.dataProperties = {};
-
 		this.api = {};
 		this.callbacks = {};
 		this.deferreds = {};
 
+		this._fixDependencyURLs();
 		this._setup();
 
 		for (var methodName in module) {
@@ -139,6 +157,16 @@
 			this._queue.push(fn);
 		},
 
+		_fixDependencyURLs: function() {
+			var deps = this.dependencies;
+			for (var i = 0, l = deps.length; i < l; ++i) {
+				var dep = deps[i];
+				if (!/\/\//.test(dep)) {
+					deps[i] = dep.replace(/^\/?/, baseURL);
+				}
+			}
+		},
+
 		_dequeueAll: function() {
 			for (var i = 0, l = this._queue.length; i < l; ++i) {
 				this._queue[i].call(this);
@@ -154,7 +182,7 @@
 			var property;
 
 			for (var i in module) {
-				var property = module[i];
+				property = module[i];
 				if (typeof property == 'function') {
 					script.push('   self["' + i.replace(/"/g, '\\"') + '"] = ' + property.toString() + ';');
 				} else {
@@ -192,7 +220,7 @@
 				if (cb) {
 
 					self.callbacks[token] = cb;
-	
+
 					// Ensure either context runs the method async:
 					setTimeout(function() {
 						runMethod();
@@ -286,7 +314,7 @@
 		var worker;
 		var script = this._buildContextScript(workerBoilerScript);
 
-		if (this.dependencies) {
+		if (this.dependencies.length) {
 			script = 'importScripts("' + this.dependencies.join('", "') + '");\n' + script;
 		}
 
@@ -355,26 +383,36 @@
 		var iWin = this.iframeWindow = iframe.contentWindow;
 		var iDoc = iWin.document; 
 
+		iWin.__loaded__ = function() {
+
+			var script = iDoc.createElement('script');
+			var js = self._buildContextScript(iframeBoilerScript);
+
+			if (script.text !== void 0) {
+				script.text = js;
+			} else {
+				script.innerHTML = js;
+			}
+
+			iDoc.documentElement.appendChild(script);
+
+			for (var i in self.dataProperties) {
+				iWin[i] = self.dataProperties[i];
+			}
+
+			self.isContextReady = true;
+			self._dequeueAll();
+
+		};
+
 		iDoc.open();
+		if (this.dependencies.length) {
+			iDoc.write(
+				'<script src="' + this.dependencies.join('"></script><script src="') + '"></script>'
+			);
+		}
+		iDoc.write('<script>__loaded__()</script>');
 		iDoc.close();
-
-		var script = iDoc.createElement('script');
-		var js = self._buildContextScript(iframeBoilerScript);
-
-		if (script.text !== void 0) {
-			script.text = js;
-		} else {
-			script.innerHTML = js;
-		}
-
-		iDoc.documentElement.appendChild(script);
-
-		for (var i in self.dataProperties) {
-			iWin[i] = self.dataProperties[i];
-		}
-
-		self.isContextReady = true;
-		self._dequeueAll();
 
 	};
 
@@ -405,20 +443,20 @@
 	/**
 	 * Exposed operative factory
 	 */
-	function operative(module) {
+	function operative(module, dependencies) {
 
 		var OperativeContext = operative.hasWorkerSupport ?
 			Operative.Worker : Operative.Iframe;
 
 		if (typeof module == 'function') {
 			// Allow a single function to be passed.
-			var o = new OperativeContext({ main: module });
+			var o = new OperativeContext({ main: module }, dependencies);
 			return function() {
 				return o.api.main.apply(o, arguments);
 			};
 		}
 
-		return new OperativeContext(module).api;
+		return new OperativeContext(module, dependencies).api;
 
 	}
 
