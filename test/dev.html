@@ -1,39 +1,26 @@
 <!doctype html>
 <meta charset="utf-8" />
 <title></title>
-<body>
+<body style="font-size:4em;">
 
 	<script src="../src/operative.js"></script>
 
 	<!-- SOME RANDOM DEV TESTING -->
 
 	<script>
-	operative.hasWorkerSupport = false;
+		operative.hasWorkerSupport = false; // Test Iframe
 
-		o = operative({
+		var o = operative({
 
-			base: [1,2,3],
-
-			setup: function() {
-			},
-
-			add: function(a, b) {
-				console.warn('>>', typeof dependency);
-				for (var i = 0; i < 1000000; ++i);
-				return this.base + a + b;
-			},
-
-			doStuff: function() {
-				var a = 1 + 2 + 3;
-				var b = this.base + a;
-				return a + b;
+			getDependencyType: function(cb) {
+				cb( typeof dependency1 );
 			}
 
-		}, ['resources/dependency.js']);
+		}, ['resources/dependency1.js']);
 
-		o.add(4, 3, function() {
+		o.getDependencyType(function() {
 			document.body.appendChild(
-				document.createTextNode( 'Result:' + [].slice.call(arguments) )
+				document.createTextNode( 'Result: ' + [].slice.call(arguments) )
 			);
 		});
 	</script>
