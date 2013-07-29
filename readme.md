@@ -111,7 +111,7 @@ Operative degrades in this order:
  * Full Worker via Eval & [Structured-Cloning](https://developer.mozilla.org/en-US/docs/Web/Guide/DOM/The_structured_clone_algorithm?redirectlocale=en-US&redirectslug=DOM%2FThe_structured_clone_algorithm) (IE10)
  * Full Worker via Blob & JSON marshalling *(???)*
  * Full Worker via Eval & JSON marshalling (Sf4)
- * No Worker: Regular JS called inline (*older browsers*)
+ * No Worker: Regular JS called via iframe (*older browsers*)
 
 Operative will degrade in environments with no Worker or Blob support. In such a case the code would execute as regular in-place JavaScript. The calls will still be asynchronous though, not immediate.
 
@@ -204,9 +204,51 @@ promise.then(function(value) {
 
 **NOTE:** Operative will only give you a promise if you don't pass a callback *and* if `operative.Promise` is defined. By default `operative.Promise` will reference `window.Promise` (*native implementation if it exists*).
 
+#### Delcaring dependencies
+
+Operative accepts a second argument, an array of JS files to load within the worker ( *or in its degraded state, an Iframe* ):
+
+```js
+// Create interface to call lodash methods inside a worker:
+var lodashWorker = operative(function(method, args, cb) {
+	cb(
+		_[method].apply(_, args)
+	);
+}, [
+	'http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.3.1/lodash.min.js'
+]);
+
+lodashWorker('uniq', [[1, 2, 3, 3, 2, 1, 4, 3, 2]], function(output) {
+	output; // => [1, 2, 3, 4]
+});
+```
+
+Declared dependencies will be loaded before any of your operative's methods are called. Even if you call one from the outside, that call will be queued until the context (Worker/iFrame) completes loading the dependencies.
+
+Note: Each dependency, if not an absolute URL, will be loaded relative to the calculated base URL, which operative determines like so:
+
+```js
+var baseURL = (
+	location.protocol + '//' +
+	location.hostname +
+	(location.port?':'+location.port:'') +
+	location.pathname
+).replace(/[^\/]+$/, '');
+```
+
+To override at runtime use:
+
+```js
+operative.setBaseURL('http://some.com/new/absolute/base/');
+// Ensure it ends in a '/'
+
+// To retrieve the current Base URL:
+operative.getBaseURL();
+```
+
 #### Destroying an operative
 
-To destroy the operative (and thus its worker):
+To destroy the operative (and thus its worker/iframe):
 
 ```js
 o.destroy();
@@ -230,6 +272,10 @@ $ grunt
 
 ### Changelog
 
+ * 0.2.0 (29 Jul 2013) See #10
+  * Dependency Loading (initially suggested in #8)
+  * Deprecate direct returning in favour of a callback passed to each operative invocation.
+  * Fallback to IFrame (to provide safer sandbox for degraded state)
  * 0.1.0 (25 Jul 2013) Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises). Also added support for `operative(Function)` which returns a single function.
  * 0.0.3 (18 Jul 2013) Support for asynchronous returning from within operartive methods (via `this.async()`).
  * 0.0.2 (12 Jul 2013) Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
