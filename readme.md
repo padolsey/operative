@@ -129,7 +129,7 @@ Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4
  * *{Boolean}* *operative.hasWorkerSupport*: A boolean indicating whether both Blob and Worker support is detected.
  * *{Function}* *operative.setSelfURL*: Allows you to set the URL of the operative script. Use this if you want IE10 & Safari 4/5 support *and* you're not including operative by the conventional `<script src="operative.js"></script>`.
 
- #### Creating an Operative:
+#### Creating an Operative:
 
 To create an operative module pass an object of methods/properties:
 
@@ -286,3 +286,4 @@ $ grunt
   * [James Padolsey](https://github.com/padolsey)
   * [Evan Worley](https://github.com/evanworley)
   * [Raynos](https://github.com/Raynos)
+  * [Calvin Metcalf](https://github.com/calvinmetcalf)
