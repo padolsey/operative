@@ -1,0 +1,14 @@
+{
+  "name": "operative",
+  "version": "0.2.0",
+  "main": "dist/operative.js",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "src",
+    "Gruntfile.js"
+  ]
+}
