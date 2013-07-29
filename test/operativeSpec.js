@@ -223,4 +223,48 @@ describe('Operative (Worker Context)', function() {
 
 	});
 
+	describe('Dependency loading', function() {
+
+		it('Can load dependencies', function() {
+			var o = operative({
+				typeofDependency1: function(cb) {
+					cb( typeof dependency1 );
+				},
+				typeofDependency2: function(cb) {
+					cb( typeof dependency2 );
+				}
+			}, ['dependency1.js', 'dependency2.js']);
+
+			async(function(nxt) {
+				o.typeofDependency1(function(t) {
+					expect(t).toBe('function');
+					nxt();
+				});
+			});
+
+			async(function(nxt) {
+				o.typeofDependency2(function(t) {
+					expect(t).toBe('function');
+					nxt();
+				});
+			});
+		});
+
+		it('Can load external dependencies', function() {
+			var o = operative({
+				version_: function(cb) {
+					cb( _.VERSION );
+				}
+			}, ['http://cdnjs.cloudflare.com/ajax/libs/lodash.js/1.3.1/lodash.min.js']);
+
+			async(function(nxt) {
+				o.version_(function(t) {
+					expect(t).toBe('1.3.1');
+					nxt();
+				});
+			});
+
+		});
+	});
+
 });

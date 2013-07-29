@@ -8,3 +8,8 @@ var async = function async(fn) {
 		}
 	});
 };
+
+if (/_SpecRunner/.test(location.href)) {
+	// Ensure correct base-url for grunt-run jasmine:
+	operative.setBaseURL( operative.getBaseURL() + 'test/resources/' );
+}
