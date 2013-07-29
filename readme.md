@@ -20,6 +20,22 @@ Even with Operative you are still subject to the constraints of Web Workers, i.e
  * No DOM/BOM Access
  * No syncronous communication with parent page
 
+### Quick install
+
+```sh
+# bower
+bower install operative
+# or npm
+npm install operative
+```
+
+*Note: Operative has not been tested in non-browser envs*
+
+Or just grab the built JS file from `dist/`, also available here (0.2.0):
+
+ * https://raw.github.com/padolsey/operative/0.2.0/dist/operative.js
+ * https://raw.github.com/padolsey/operative/0.2.0/dist/operative.min.js
+
 ### Creating an Operative Module
 
 An Operative module is defined as an object containing properties/methods:
