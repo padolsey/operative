@@ -290,6 +290,7 @@ $ grunt
 
 ### Changelog
 
+ * 0.2.1 (30 Jul 2013) Fix worker-via-eval support (Safari 4/5, IE8/9)
  * 0.2.0 (29 Jul 2013) See #10
   * Dependency Loading (initially suggested in #8)
   * Deprecate direct returning in favour of a callback passed to each operative invocation.
