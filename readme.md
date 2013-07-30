@@ -306,3 +306,4 @@ $ grunt
   * [Evan Worley](https://github.com/evanworley)
   * [Raynos](https://github.com/Raynos)
   * [Calvin Metcalf](https://github.com/calvinmetcalf)
+  * [PG Herveou](https://github.com/pgherveou)
