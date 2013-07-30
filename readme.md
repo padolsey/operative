@@ -18,7 +18,7 @@ Utilising unabstracted Workers can be cumbersome and awkward. Having to design a
 Even with Operative you are still subject to the constraints of Web Workers, i.e.
 
  * No DOM/BOM Access
- * No syncronous communication with parent page
+ * No synchronous communication with parent page
 
 ### Quick install
 
@@ -58,7 +58,7 @@ calculator.add(1, 2, function(result) {
 
 The `add()` function will run within a worker. The value it returns is handled by operative and forwarded, asynchronously to your callback function in the parent page.
 
-Notice that the exposed `add` method requires its last argument to be a callback. The last argument passed to an operative method must always be a callback. All preceeding arguments are passed into the worker itself.
+Notice that the exposed `add` method requires its last argument to be a callback. The last argument passed to an operative method must always be a callback. All preceding arguments are passed into the worker itself.
 
 **NOTE:** It's important to note that the Operative code is not executed in-place. *It's executed within a Worker. You won't be able to access variables surrounding the definition of your operative:
 
@@ -142,8 +142,10 @@ Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4
  * *{Function}* *operative*: A global function which creates a new Operative module with the passed methods/properties. Note: Non-function properties must be basic objects that can be passed to `JSON.stringify`.
   * Pass an object of methods, e.g. `operative({ method: function() {...} ... });`
   * Or pass a single function, e.g. `operative(function() {})` (*in which case a single function is returned*)
+  * Either signature allows you to pass dependencies as a second param: `operative(..., ['dep1.js', 'dep2.js'])`.
  * *{Boolean}* *operative.hasWorkerSupport*: A boolean indicating whether both Blob and Worker support is detected.
  * *{Function}* *operative.setSelfURL*: Allows you to set the URL of the operative script. Use this if you want IE10 & Safari 4/5 support *and* you're not including operative by the conventional `<script src="operative.js"></script>`.
+ * *{Function}* *operative.setBaseURL*: Allows you to set the URL that should be prepended to relative dependency URLs.
 
 #### Creating an Operative:
 
@@ -220,7 +222,7 @@ promise.then(function(value) {
 
 **NOTE:** Operative will only give you a promise if you don't pass a callback *and* if `operative.Promise` is defined. By default `operative.Promise` will reference `window.Promise` (*native implementation if it exists*).
 
-#### Delcaring dependencies
+#### Declaring dependencies
 
 Operative accepts a second argument, an array of JS files to load within the worker ( *or in its degraded state, an Iframe* ):
 
@@ -293,7 +295,7 @@ $ grunt
   * Deprecate direct returning in favour of a callback passed to each operative invocation.
   * Fallback to IFrame (to provide safer sandbox for degraded state)
  * 0.1.0 (25 Jul 2013) Support Promises (from [Issue #3](https://github.com/padolsey/operative/issues/3)) if they're provided by a [native Promise implementation](http://dom.spec.whatwg.org/#promises) or [compliant polyfill](https://github.com/slightlyoff/Promises). Also added support for `operative(Function)` which returns a single function.
- * 0.0.3 (18 Jul 2013) Support for asynchronous returning from within operartive methods (via `this.async()`).
+ * 0.0.3 (18 Jul 2013) Support for asynchronous returning from within operative methods (via `this.async()`).
  * 0.0.2 (12 Jul 2013) Improved browser support: IE10 support via eval, degraded JSON-marshalling etc.
  * 0.0.1 (11 Jul 2013) Initial
 
