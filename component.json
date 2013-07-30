@@ -1,0 +1,6 @@
+{
+  "name": "operative",
+  "version": "0.2.1",
+  "main": "dist/operative.js",
+  "scripts": ["dist/operative.js"]
+}
