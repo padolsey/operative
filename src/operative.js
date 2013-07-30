@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.2.0
+ * @version 0.2.1
  * @license MIT
  */
 (function() {
@@ -269,13 +269,16 @@
 		var data = e.data;
 
 		if (typeof data === 'string' && data.indexOf('pingback') === 0) {
-			if (data === 'pingback:objectTransferSupport=NO') {
-				// No transferrableObj support (marshal JSON from now on):
+			if (data === 'pingback:structuredCloningSupport=NO') {
+				// No structuredCloningSupport support (marshal JSON from now on):
 				this._marshal = function(o) { return JSON.stringify(o); };
 				this._demarshal = function(o) { return JSON.parse(o); };
 			}
 
 			this.isContextReady = true;
+			this._postMessage({
+				definitions: this.dataProperties
+			});
 			this._dequeueAll();
 			return;
 
@@ -311,7 +314,10 @@
 		var self = this;
 
 		var worker;
-		var script = this._buildContextScript(workerBoilerScript);
+		var script = this._buildContextScript(
+			// The script is not included if we're Eval'ing this file directly:
+			workerViaBlobSupport ? workerBoilerScript : ''
+		);
 
 		if (this.dependencies.length) {
 			script = 'importScripts("' + this.dependencies.join('", "') + '");\n' + script;
@@ -325,18 +331,14 @@
 			}
 			worker = this.worker = new Worker( opScriptURL );
 			// Marshal-agnostic initial message is boiler-code:
-			// (We don't yet know if transferrableObjs are supported so we send a string)
-			worker.postMessage('EVAL|' + this._buildWorkerScript(null));
+			// (We don't yet know if structured-cloning is supported so we send a string)
+			worker.postMessage('EVAL|' + script);
 		}
 
 		worker.postMessage(['PING']); // Initial PING
 
 		worker.addEventListener('message', function(e) {
 			self._onWorkerMessage(e);
-		});
-
-		this._postMessage({
-			definitions: this.dataProperties
 		});
 	};
 
@@ -367,9 +369,12 @@
 
 	var IframeProto = Operative.Iframe.prototype = objCreate(Operative.prototype);
 
+	var _loadedMethodNameI = 0;
+
 	IframeProto._setup = function() {
 
 		var self = this;
+		var loadedMethodName = '__operativeIFrameLoaded' + ++_loadedMethodNameI;
 
 		this.module.isWorker = false;
 
@@ -380,9 +385,13 @@
 		iframe.style.display = 'none';
 
 		var iWin = this.iframeWindow = iframe.contentWindow;
-		var iDoc = iWin.document; 
+		var iDoc = iWin.document;
 
-		iWin.__loaded__ = function() {
+		// Cross browser (tested in IE8,9) way to call method from within
+		// IFRAME after all <Script>s have loaded:
+		window[loadedMethodName] = function() {
+
+			window[loadedMethodName] = null;
 
 			var script = iDoc.createElement('script');
 			var js = self._buildContextScript(iframeBoilerScript);
@@ -410,7 +419,8 @@
 				'<script src="' + this.dependencies.join('"></script><script src="') + '"></script>'
 			);
 		}
-		iDoc.write('<script>__loaded__()</script>');
+		// Place <script> at bottom to tell parent-page when dependencies are loaded:
+		iDoc.write('<script>window.top.' + loadedMethodName + '();</script>');
 		iDoc.close();
 
 	};
@@ -460,7 +470,7 @@
 	}
 
 /**
- * The boilerplae for the Iframe Context
+ * The boilerplate for the Iframe Context
  * NOTE:
  *  this'll be executed within an iframe, not here.
  *  Indented @ Zero to make nicer debug code within worker
@@ -514,7 +524,7 @@ function iframeBoilerScript() {
 function workerBoilerScript() {
 
 	var postMessage = self.postMessage;
-	var objectTransferSupport = null;
+	var structuredCloningSupport = null;
 
 	self.console = {};
 	self.isWorker = true;
@@ -539,20 +549,20 @@ function workerBoilerScript() {
 			return;
 		}
 
-		if (objectTransferSupport == null) {
+		if (structuredCloningSupport == null) {
 
 			// e.data of ['PING'] (An array) indicates transferrableObjSupport
 			// e.data of '"PING"' (A string) indicates no support (Array has been serialized)
-			objectTransferSupport = e.data[0] === 'PING';
+			structuredCloningSupport = e.data[0] === 'PING';
 
 			// Pingback to parent page:
 			self.postMessage(
-				objectTransferSupport ?
-					'pingback:objectTransferSupport=YES' :
-					'pingback:objectTransferSupport=NO'
+				structuredCloningSupport ?
+					'pingback:structuredCloningSupport=YES' :
+					'pingback:structuredCloningSupport=NO'
 			);
 
-			if (!objectTransferSupport) {
+			if (!structuredCloningSupport) {
 				postMessage = function(msg) {
 					// Marshal before sending
 					return self.postMessage(JSON.stringify(msg));
@@ -562,7 +572,7 @@ function workerBoilerScript() {
 			return;
 		}
 
-		if (!objectTransferSupport) {
+		if (!structuredCloningSupport) {
 			// Demarshal:
 			data = JSON.parse(data);
 		}

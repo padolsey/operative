@@ -8,21 +8,23 @@
 	<!-- SOME RANDOM DEV TESTING -->
 
 	<script>
-		operative.hasWorkerSupport = false; // Test Iframe
+		setTimeout(function() {
+			operative.hasWorkerSupport = false; // Test Iframe
 
-		var o = operative({
+			var o = operative({
 
-			getDependencyType: function(cb) {
-				cb( typeof dependency1 );
-			}
+				getDependencyType: function(cb) {
+					cb( typeof dependency1 );
+				}
 
-		}, ['resources/dependency1.js']);
+			}, ['resources/dependency1.js']);
 
-		o.getDependencyType(function() {
-			document.body.appendChild(
-				document.createTextNode( 'Result: ' + [].slice.call(arguments) )
-			);
-		});
+			o.getDependencyType(function() {
+				document.body.appendChild(
+					document.createTextNode( 'Result: ' + [].slice.call(arguments) )
+				);
+			});
+		}, 1000);
 	</script>
 
 </body>
