@@ -266,11 +266,13 @@ operative.getBaseURL();
 
 #### Destroying an operative
 
-To destroy the operative (and thus its worker/iframe):
+To terminate the operative (and thus its worker/iframe):
 
 ```js
-o.destroy();
+o.terminate();
 ```
+
+(`terminate` is aliased to the now-deprecated `destroy`)
 
 ### Testing & Building
 
@@ -290,6 +292,7 @@ $ grunt
 
 ### Changelog
 
+ * 0.3.0 (21 Sep 2013) API: `terminate` aliased to `destroy` (deprecating the latter). See [Issue #14](https://github.com/padolsey/operative/issues/14).
  * 0.2.1 (30 Jul 2013) Fix worker-via-eval support (Safari 4/5, IE8/9)
  * 0.2.0 (29 Jul 2013) See #10
   * Dependency Loading (initially suggested in #8)

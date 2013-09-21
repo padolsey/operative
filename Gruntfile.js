@@ -12,7 +12,7 @@ module.exports = function(grunt) {
 	grunt.initConfig({
 		pkg: grunt.file.readJSON('package.json'),
 		jasmine: {
-			siml: {
+			operative: {
 				options: {
 					specs: ['test/*Spec.js'],
 					helpers: ['test/resources/specHelpers.js'],
