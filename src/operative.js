@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.2.1
+ * @version 0.3.0
  * @license MIT
  */
 (function() {
@@ -136,7 +136,7 @@
 		this.api.__operative__ = this;
 
 		// Provide the instance's destroy method on the exposed API:
-		this.api.destroy = function() {
+		this.api.destroy = this.api.terminate = function() {
 			return _self.destroy();
 		};
 
@@ -460,9 +460,16 @@
 		if (typeof module == 'function') {
 			// Allow a single function to be passed.
 			var o = new OperativeContext({ main: module }, dependencies);
-			return function() {
+			var singularOperative = function() {
 				return o.api.main.apply(o, arguments);
 			};
+			// Copy across exposable API to the returned function:
+			for (var i in o.api) {
+				if (hasOwn.call(o.api, i)) {
+					singularOperative[i] = o.api[i];
+				}
+			}
+			return singularOperative;
 		}
 
 		return new OperativeContext(module, dependencies).api;

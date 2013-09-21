@@ -27,6 +27,13 @@ describe('Operative (Worker Context)', function() {
 		});
 	});
 
+	describe('Destroying', function() {
+		it('Should have destroy + terminate alias', function() {
+			operative(function(){}).destroy();
+			operative(function(){}).terminate();
+		});
+	});
+
 	describe('Async Operative', function() {
 		it('Should be able to return [within the worker] asynchronously', function() {
 			var o = operative({
