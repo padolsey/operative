@@ -31,10 +31,10 @@ npm install operative
 
 *Note: Operative has not been tested in non-browser envs*
 
-Or just grab the built JS file from `dist/`, also available here (0.2.0):
+Or just grab the built JS file from `dist/`, also available here (0.3.0):
 
- * https://raw.github.com/padolsey/operative/0.2.0/dist/operative.js
- * https://raw.github.com/padolsey/operative/0.2.0/dist/operative.min.js
+ * https://raw.github.com/padolsey/operative/0.3.0/dist/operative.js
+ * https://raw.github.com/padolsey/operative/0.3.0/dist/operative.min.js
 
 ### Creating an Operative Module
 
