@@ -1,4 +1,4 @@
-/**
+/*!
  * Operative
  * ---
  * Operative is a small JS utility for seamlessly creating Web Worker scripts.
