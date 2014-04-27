@@ -310,3 +310,4 @@ $ grunt
   * [Raynos](https://github.com/Raynos)
   * [Calvin Metcalf](https://github.com/calvinmetcalf)
   * [PG Herveou](https://github.com/pgherveou)
+  * [Luke Bunselmeyer](https://github.com/wmluke)
