@@ -1,9 +1,17 @@
-var path = require('path');
-var fs = require('fs');
+var MIN_BANNER = '/** Operative v<%= pkg.version %> (c) 2013 James padolsey, MIT-licensed, http://github.com/padolsey/operative **/\n';
 
-var VERSION = fs.readFileSync(path.join(__dirname, 'VERSION'), 'utf-8');
-
-var MIN_BANNER = '/** Operative v' + VERSION + ' (c) 2013 James padolsey, MIT-licensed, http://github.com/padolsey/operative **/\n';
+var DEBUG_BANNER = [
+	'/*!',
+	' * Operative',
+	' * ---',
+	' * Operative is a small JS utility for seamlessly creating Web Worker scripts.',
+	' * ---',
+	' * @author James Padolsey http://james.padolsey.com',
+	' * @repo http://github.com/padolsey/operative',
+	' * @version <%= pkg.version %>',
+	' * @license MIT',
+	' */'
+].join('\n') + '\n';
 
 module.exports = function(grunt) {
 
@@ -32,16 +40,27 @@ module.exports = function(grunt) {
 			}
 		},
 		concat: {
+			options: {
+				banner: DEBUG_BANNER,
+				stripBanners: true
+			},
 			dist: {
 				src: ['src/operative.js'],
 				dest: 'dist/operative.js'
 			}
-		}
+		},
+		bumpup: ['package.json', 'bower.json', 'component.json']
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-jasmine');
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-concat');
+	grunt.loadNpmTasks('grunt-bumpup');
+
+	grunt.registerTask('bump', function (type) {
+		type = type ? type : 'patch';
+		grunt.task.run('bumpup:' + type);
+	});
 
 	grunt.registerTask('default', ['build']);
 	grunt.registerTask('test', ['jasmine']);
