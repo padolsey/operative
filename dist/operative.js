@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.3.0
+ * @version 0.3.1
  * @license MIT
  */
 (function() {

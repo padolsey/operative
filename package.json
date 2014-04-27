@@ -2,7 +2,7 @@
   "name": "operative",
   "title": "operative",
   "description": "Operative: Inline Web-Worker Helper",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "James Padolsey (http://git.io/padolsey)",
   "main": "dist/operative.min.js",
   "devDependencies": {
