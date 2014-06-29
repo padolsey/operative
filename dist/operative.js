@@ -60,7 +60,7 @@
 
 		try {
 			blob = new Blob([script], { type: 'text/javascript' });
-		} catch (e) { 
+		} catch (e) {
 			blob = new BlobBuilder();
 			blob.append(script);
 			blob = blob.getBlob();
@@ -75,12 +75,14 @@
 	operative.Promise = window.Promise;
 
 	// Expose:
-	if (typeof module !== 'undefined' && module.exports) {
+	if (typeof define === 'function' && define.amd) {
+		define( function () { return operative; });
+	} else if (typeof module !== 'undefined' && module.exports) {
 		module.exports = operative;
 	} else {
 		window.operative = operative;
 	}
-	
+
 
 	operative.setSelfURL = function(url) {
 		opScriptURL = url;
