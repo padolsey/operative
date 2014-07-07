@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.3.1
+ * @version 0.3.2
  * @license MIT
  */
 (function() {
@@ -231,8 +231,21 @@
 
 					// No Callback -- Promise used:
 
-					return new operative.Promise(function(deferred) {
-						deferred.fulfil = deferred.fulfill;
+					return new operative.Promise(function(fulfil, reject) {
+						var deferred;
+
+						if (fulfil.fulfil || fulfil.fulfill) {
+							// Backwards compatibility
+							deferred = fulfil;
+							deferred.fulfil = deferred.fulfill = fulfil.fulfil || fulfil.fulfill;
+						} else {
+							deferred = {
+								fulfil: fulfil,
+								fulfill: fulfil,
+								reject: reject
+							};
+						}
+
 						self.deferreds[token] = deferred;
 						runMethod();
 					});
