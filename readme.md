@@ -292,6 +292,7 @@ $ grunt
 
 ### Changelog
 
+ * 0.3.2 (7 Jul 2014) AMD Support + Align correctly with ES6 Promise API (PRs [21](https://github.com/padolsey/operative/pull/21) and [22](https://github.com/padolsey/operative/pull/22) -- thanks [Rich](https://github.com/Rich-Harris)!)
  * 0.3.1 (27 Apr 2014) Improved release flow via [PR #20](https://github.com/padolsey/operative/pull/20).
  * 0.3.0 (21 Sep 2013) API: `terminate` aliased to `destroy` (deprecating the latter). See [Issue #14](https://github.com/padolsey/operative/issues/14).
  * 0.2.1 (30 Jul 2013) Fix worker-via-eval support (Safari 4/5, IE8/9)
