@@ -313,3 +313,4 @@ $ grunt
   * [Calvin Metcalf](https://github.com/calvinmetcalf)
   * [PG Herveou](https://github.com/pgherveou)
   * [Luke Bunselmeyer](https://github.com/wmluke)
+  * [Rich Harris](https://github.com/Rich-Harris)
