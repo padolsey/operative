@@ -490,6 +490,28 @@
 
 	}
 
+	operative.pool = function(size, module, dependencies) {
+		size = 0 | Math.abs(size) || 1;
+		var operatives = [];
+		var current = 0;
+
+		for (var i = 0; i < size; ++i) {
+			operatives.push(operative(module, dependencies));
+		}
+
+		return {
+			terminate: function() {
+				for (var i = 0; i < size; ++i) {
+					operatives[i].destroy();
+				}
+			},
+			next: function() {
+				current = current + 1 === size ? 0 : current + 1;
+				return operatives[current];
+			}
+		};
+	};
+
 /**
  * The boilerplate for the Iframe Context
  * NOTE:
@@ -539,7 +561,7 @@ function iframeBoilerScript() {
 /**
  * The boilerplate for the Worker Blob
  * NOTE:
- *  this'll be executed within an iframe, not here.
+ *  this'll be executed within a worker, not here.
  *  Indented @ Zero to make nicer debug code within worker
  */
 function workerBoilerScript() {
