@@ -402,7 +402,7 @@
 		var iDoc = iWin.document;
 
 		// Cross browser (tested in IE8,9) way to call method from within
-		// IFRAME after all <Script>s have loaded:
+		// IFRAME after all < script >s have loaded:
 		window[loadedMethodName] = function() {
 
 			window[loadedMethodName] = null;
@@ -430,11 +430,11 @@
 		iDoc.open();
 		if (this.dependencies.length) {
 			iDoc.write(
-				'<script src="' + this.dependencies.join('"></script><script src="') + '"></script>'
+				'<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>'
 			);
 		}
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write('<script>window.top.' + loadedMethodName + '();</script>');
+		iDoc.write('<script>window.top.' + loadedMethodName + '();<\/script>');
 		iDoc.close();
 
 	};

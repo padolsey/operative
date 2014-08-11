@@ -24,15 +24,9 @@
   },
   "license": "MIT",
   "testling" : {
+    "files": ["test/operative.spec.js"],
     "scripts": [
-      "test/resources/Promise.js",
-      "src/operative.js",
-      "node_modules/grunt-contrib-jasmine/vendor/jasmine-1.3.1/jasmine.js",
-      "node_modules/grunt-contrib-jasmine/vendor/jasmine-1.3.1/jasmine-html.js",
-      "node_modules/jasmine-reporters/src/jasmine.tap_reporter.js",
-      "test/resources/specHelpers.js",
-      "test/*.js",
-      "test/resources/runner.js"
+      "test/resources/Promise.js"
     ],
     "browsers": [
       "ie/6..latest",
