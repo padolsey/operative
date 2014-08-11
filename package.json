@@ -12,7 +12,8 @@
     "grunt": "0.4.0rc5",
     "grunt-contrib-concat": "~0.3.0",
     "grunt-bumpup": "~0.2.0",
-    "jasmine-reporters": "^2.0.3"
+    "jasmine-reporters": "^2.0.3",
+    "tape": "^2.14.0"
   },
   "keywords": [],
   "scripts": {
@@ -23,8 +24,10 @@
     "url": "git://github.com/padolsey/operative.git"
   },
   "license": "MIT",
-  "testling" : {
-    "files": ["test/operative.spec.js"],
+  "testling": {
+    "files": [
+      "test/operative.spec.js"
+    ],
     "scripts": [
       "test/resources/Promise.js"
     ],
