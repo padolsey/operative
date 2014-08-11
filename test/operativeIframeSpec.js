@@ -1,6 +1,5 @@
 describe('Operative (Iframe context)', function() {
 
-
 	beforeEach(function() {
 		operative.hasWorkerSupport = false;
 	});

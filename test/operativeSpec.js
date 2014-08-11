@@ -240,7 +240,7 @@ describe('Operative (Worker Context)', function() {
 				typeofDependency2: function(cb) {
 					cb( typeof dependency2 );
 				}
-			}, ['dependency1.js', 'dependency2.js']);
+			}, ['test/resources/dependency1.js', 'test/resources/dependency2.js']);
 
 			async(function(nxt) {
 				o.typeofDependency1(function(t) {
