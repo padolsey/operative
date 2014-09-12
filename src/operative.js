@@ -468,7 +468,7 @@
 	 */
 	function operative(module, dependencies) {
 
-		var OperativeContext = operative.hasWorkerSupport ?
+		var OperativeContext = operative.hasWorkerSupport && (workerViaBlobSupport || opScriptURL) ?
 			Operative.Worker : Operative.Iframe;
 
 		if (typeof module == 'function') {
