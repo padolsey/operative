@@ -309,15 +309,16 @@
 				var callback = this.callbacks[data.token];
 				var deferred = this.deferreds[data.token];
 
-				delete this.callbacks[data.token];
-				delete this.deferreds[data.token];
-
 				var deferredAction = data.result && data.result.isDeferred && data.result.action;
 
 				if (deferred && deferredAction) {
 					deferred[deferredAction](data.result.args[0]);
 				} else if (callback) {
 					callback.apply(this, data.result.args);
+				} else if (deferred) {
+					// Resolve promise even if result was given
+					// via callback within the worker:
+					deferred.fulfil(data.result.args[0]);
 				}
 
 				break;
@@ -357,7 +358,9 @@
 	};
 
 	WorkerProto._postMessage = function(msg) {
-		return this.worker.postMessage(this._marshal(msg));
+		return this.worker.postMessage(
+			this._marshal(msg)
+		);
 	};
 
 	WorkerProto._runMethod = function(methodName, token, args) {
@@ -388,7 +391,7 @@
 	IframeProto._setup = function() {
 
 		var self = this;
-		var loadedMethodName = '__operativeIFrameLoaded' + ++_loadedMethodNameI;
+		var loadedMethodName = '__operativeIFrameLoaded' + (++_loadedMethodNameI);
 
 		this.module.isWorker = false;
 
@@ -402,7 +405,7 @@
 		var iDoc = iWin.document;
 
 		// Cross browser (tested in IE8,9) way to call method from within
-		// IFRAME after all <Script>s have loaded:
+		// IFRAME after all < script >s have loaded:
 		window[loadedMethodName] = function() {
 
 			window[loadedMethodName] = null;
@@ -430,28 +433,28 @@
 		iDoc.open();
 		if (this.dependencies.length) {
 			iDoc.write(
-				'<script src="' + this.dependencies.join('"></script><script src="') + '"></script>'
+				'<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>'
 			);
 		}
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write('<script>window.top.' + loadedMethodName + '();</script>');
+		iDoc.write('<script>window.top.' + loadedMethodName + '();<\/script>');
 		iDoc.close();
 
 	};
 
 	IframeProto._runMethod = function(methodName, token, args) {
 		var self = this;
+
 		var callback = this.callbacks[token];
 		var deferred = this.deferreds[token];
-		delete this.callbacks[token];
-		delete this.deferreds[token];
-		this.iframeWindow.__run__(methodName, args, function() {
+
+		this.iframeWindow.__run__(methodName, args, function(result) {
 			var cb = callback;
+			var df = deferred;
 			if (cb) {
-				callback = null;
 				cb.apply(self, arguments);
-			} else {
-				throw new Error('Operative: You have already returned.');
+			} else if(df) {
+				df.fulfil(result);
 			}
 		}, deferred);
 	};
@@ -489,6 +492,28 @@
 		return new OperativeContext(module, dependencies).api;
 
 	}
+
+	operative.pool = function(size, module, dependencies) {
+		size = 0 | Math.abs(size) || 1;
+		var operatives = [];
+		var current = 0;
+
+		for (var i = 0; i < size; ++i) {
+			operatives.push(operative(module, dependencies));
+		}
+
+		return {
+			terminate: function() {
+				for (var i = 0; i < size; ++i) {
+					operatives[i].destroy();
+				}
+			},
+			next: function() {
+				current = current + 1 === size ? 0 : current + 1;
+				return operatives[current];
+			}
+		};
+	};
 
 /**
  * The boilerplate for the Iframe Context
@@ -539,7 +564,7 @@ function iframeBoilerScript() {
 /**
  * The boilerplate for the Worker Blob
  * NOTE:
- *  this'll be executed within an iframe, not here.
+ *  this'll be executed within a worker, not here.
  *  Indented @ Zero to make nicer debug code within worker
  */
 function workerBoilerScript() {
@@ -670,10 +695,6 @@ function workerBoilerScript() {
 				token: data.token,
 				result: res
 			});
-			// Override with error-thrower if we've already returned:
-			returnResult = function() {
-				throw new Error('Operative: You have already returned.');
-			};
 		}
 	});
 }

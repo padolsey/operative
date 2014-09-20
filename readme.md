@@ -290,6 +290,8 @@ $ # do everything + build dist:
 $ grunt
 ```
 
+*Special thanks to [BrowserStack](http://www.browserstack.com/) for providing free testing!*
+
 ### Changelog
 
  * 0.3.2 (7 Jul 2014) AMD Support + Align correctly with ES6 Promise API (PRs [21](https://github.com/padolsey/operative/pull/21) and [22](https://github.com/padolsey/operative/pull/22) -- thanks [Rich](https://github.com/Rich-Harris)!)
