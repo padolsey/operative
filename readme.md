@@ -276,6 +276,10 @@ o.terminate();
 
 ### Testing & Building
 
+
+**Special thanks to [BrowserStack](http://www.browserstack.com/) for providing free testing!**
+
+
 ```
 $ # grab dependencies
 $ npm install
@@ -289,8 +293,6 @@ $ grunt test
 $ # do everything + build dist:
 $ grunt
 ```
-
-*Special thanks to [BrowserStack](http://www.browserstack.com/) for providing free testing!*
 
 ### Changelog
 
