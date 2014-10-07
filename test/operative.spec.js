@@ -117,7 +117,10 @@ describe('Operative (worker Context)', function() {
 					op(true).then(function(a) {
 						expect(a).to.equal(873);
 						done();
-					}, function() {});
+					}, function() {
+						expect(true).to.be.false; // this should not run
+						done();
+					});
 
 				});
 			});
@@ -127,6 +130,7 @@ describe('Operative (worker Context)', function() {
 					var fulfilled = false;
 					op(false).then(function() {
 						expect(true).to.be.false; // this should not run
+						done();
 					}, function(err) {
 						expect(err).to.equal(999);
 						done();
@@ -174,11 +178,11 @@ describe('Operative (worker Context)', function() {
 				})
 				.then(o.isItAWorker_Promisable)
 				.then(function(isWorker) {
-					expect(isWorker).to.be.true;
+					expect(isWorker).to.equal( operative.hasWorkerSupport );
 				})
 				.then(o.isItAWorker)
 				.then(function(isWorker) {
-					expect(isWorker).to.be.true;
+					expect(isWorker).to.equal( operative.hasWorkerSupport );
 				})
 				.then(o.getSomething)
 				.then(function(n) {
@@ -194,9 +198,7 @@ describe('Operative (worker Context)', function() {
 				.then(function(n) {
 					expect(n).to.equal(98);
 				})
-				.then(function() {
-					done();
-				});
+				.then(done, done);
 
 		});
 
@@ -267,6 +269,80 @@ describe('Operative (worker Context)', function() {
 
 		});
 
+	});
+
+	describe('Transfers', function() {
+		describe('Using callback API', function() {
+			it('Transfers ownership of the buffer', function(done) {
+
+				if (!operative.hasTransferSupport && !window.Uint8Array) {
+					return;
+				}
+
+				var o = operative({
+					receive: function(t, cb) {
+						self.arr = new Uint8Array([1,2,3]);
+						cb.transfer(self.arr.buffer, [self.arr.buffer]);
+					},
+					isYourByteLengthEmpty: function(cb) {
+						cb(
+							0 == (self.arr.buffer ? self.arr.buffer.byteLength : self.arr.byteLength)
+						);
+					}
+				});
+
+				var a = new Uint8Array([33,22,11]);
+
+				o.receive.transfer(a.buffer, [a.buffer], function(r) {
+					if (operative.hasTransferSupport) {
+						expect(a.buffer ? a.buffer.byteLength : a.byteLength).to.equal(0);
+					}
+					o.isYourByteLengthEmpty(function(result) {
+						if (operative.hasTransferSupport) {
+							expect(result).to.be.true;
+						}
+						done();
+					})
+				});
+
+			});
+		});
+		describe('Using promise API', function() {
+			it('Transfers ownership of the buffer', function(done) {
+
+				if (!operative.hasTransferSupport && !window.Uint8Array) {
+					return;
+				}
+
+				var o = operative({
+					receive: function(t, cb) {
+						self.arr = new Uint8Array([1,2,3]);
+						var def = this.deferred();
+						def.transferResolve(self.arr.buffer, [self.arr.buffer]);
+					},
+					isYourByteLengthEmpty: function(cb) {
+						this.deferred().resolve(
+							0 == (self.arr.buffer ? self.arr.buffer.byteLength : self.arr.byteLength)
+						);
+					}
+				});
+
+				var a = new Uint8Array([33,22,11]);
+
+				o.receive.transfer(a.buffer, [a.buffer])
+					.then(function(r) {
+						if (operative.hasTransferSupport) {
+							expect(a.buffer ? a.buffer.byteLength : a.byteLength).to.equal(0);
+						}
+						return o.isYourByteLengthEmpty().then(function(result) {
+							if (operative.hasTransferSupport) {
+								expect(result).to.be.true;
+							}
+						})
+					}).then(done, done);
+
+			});
+		});
 	});
 
 });

@@ -188,9 +188,7 @@ describe('Operative (forced iframe context)', function() {
 				.then(function(n) {
 					expect(n).to.equal(98);
 				})
-				.then(function() {
-					done();
-				});
+				.then(done, done);
 
 		});
 
@@ -231,6 +229,73 @@ describe('Operative (forced iframe context)', function() {
 
 		});
 
+	});
+
+
+	describe('Transfers', function() {
+		describe('Using callback API', function() {
+			it('Works in fallback state (no ownership transfer)', function(done) {
+
+				if (!window.Uint8Array) {
+					return;
+				}
+
+				var o = operative({
+					receive: function(t, cb) {
+						self.arr = new Uint8Array([1,2,3]);
+						cb.transfer(self.arr.buffer, [self.arr.buffer]);
+					},
+					isYourByteLengthIsNonEmpty: function(cb) {
+						cb(
+							3 == (self.arr.buffer ? self.arr.buffer.byteLength : self.arr.byteLength)
+						);
+					}
+				});
+
+				var a = new Uint8Array([33,22,11]);
+
+				o.receive.transfer(a.buffer, [a.buffer], function(r) {
+					expect(a.buffer ? a.buffer.byteLength : a.byteLength).to.equal(3);
+					o.isYourByteLengthIsNonEmpty(function(result) {
+						expect(result).to.be.true;
+						done();
+					})
+				});
+
+			});
+		});
+		describe('Using promise API', function() {
+			it('Works in fallback state (no ownership transfer)', function(done) {
+
+				if (!window.Uint8Array) {
+					return;
+				}
+
+				var o = operative({
+					receive: function(t, cb) {
+						self.arr = new Uint8Array([1,2,3]);
+						var def = this.deferred();
+						def.transferResolve(self.arr.buffer, [self.arr.buffer]);
+					},
+					isYourByteLengthIsNonEmpty: function(cb) {
+						this.deferred().resolve(
+							3 == (self.arr.buffer ? self.arr.buffer.byteLength : self.arr.byteLength)
+						);
+					}
+				});
+
+				var a = new Uint8Array([33,22,11]);
+
+				o.receive.transfer(a.buffer, [a.buffer])
+					.then(function(r) {
+						expect(a.buffer ? a.buffer.byteLength : a.byteLength).to.equal(3);
+						return o.isYourByteLengthIsNonEmpty().then(function(result) {
+							expect(result).to.be.true;
+						})
+					}).then(done, done);
+
+			});
+		});
 	});
 
 });
