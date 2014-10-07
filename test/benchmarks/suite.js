@@ -140,3 +140,25 @@ test('Operative pool:4', function(done) {
   c.next().exec(check);
   c.next().exec(check);
 });
+
+test('4 M/B w/o transfer', function(done) {
+  var o = operative(function(d, cb) {
+    cb();
+  });
+
+  o(new  Uint8Array(1024*1024*4), function() {
+    done()
+  });
+});
+
+test('4 M/B w/ transfer', function(done) {
+  var o = operative(function(d, cb) {
+    cb();
+  });
+
+  var arr = new  Uint8Array(1024*1024*4);
+
+  o.transfer(arr.buffer, [arr.buffer], function() {
+    done();
+  });
+});
