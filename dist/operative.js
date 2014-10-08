@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.3.2
+ * @version 0.4.0-rc1
  * @license MIT
  */
 (function() {
@@ -20,6 +20,7 @@
 
 	var slice = [].slice;
 	var hasOwn = {}.hasOwnProperty;
+	var toString = {}.toString;
 
 	var scripts = document.getElementsByTagName('script');
 	var opScript = scripts[scripts.length - 1];
@@ -44,6 +45,16 @@
 			return false;
 		}
 		return true;
+	}());
+
+	var transferrableObjSupport = (function() {
+		try {
+			var ab = new ArrayBuffer(1);
+			new Worker( makeBlobURI(';') ).postMessage(ab, [ab]);
+			return !ab.byteLength;
+		} catch(e) {
+			return false;
+		}
 	}());
 
 	/**
@@ -71,6 +82,8 @@
 
 	// Indicates whether operatives will run within workers:
 	operative.hasWorkerSupport = !!window.Worker;
+	operative.hasWorkerViaBlobSupport = workerViaBlobSupport;
+	operative.hasTransferSupport = transferrableObjSupport;
 
 	operative.Promise = window.Promise;
 
@@ -95,6 +108,10 @@
 	operative.getBaseURL = function() {
 		return baseURL;
 	};
+
+	function OperativeTransfers(transfers) {
+		this.value = transfers;
+	}
 
 	/**
 	 * Operative: Exposed Operative Constructor
@@ -201,7 +218,7 @@
 
 			var self = this;
 
-			this.api[methodName] = function() {
+			var method = this.api[methodName] = function() {
 
 				if (self.isDestroyed) {
 					throw new Error('Operative: Cannot run method. Operative has already been destroyed');
@@ -210,6 +227,7 @@
 				var token = ++self._curToken;
 				var args = slice.call(arguments);
 				var cb = typeof args[args.length - 1] == 'function' && args.pop();
+				var transferables = args[args.length - 1] instanceof OperativeTransfers && args.pop();
 
 				if (!cb && !operative.Promise) {
 					throw new Error(
@@ -231,18 +249,25 @@
 
 					// No Callback -- Promise used:
 
-					return new operative.Promise(function(fulfil, reject) {
+					return new operative.Promise(function(resolve, reject) {
 						var deferred;
 
-						if (fulfil.fulfil || fulfil.fulfill) {
+						if (resolve.fulfil || resolve.fulfill) {
 							// Backwards compatibility
-							deferred = fulfil;
-							deferred.fulfil = deferred.fulfill = fulfil.fulfil || fulfil.fulfill;
+							deferred = resolve;
+							deferred.fulfil = deferred.fulfill = resolve.fulfil || resolve.fulfill;
 						} else {
 							deferred = {
-								fulfil: fulfil,
-								fulfill: fulfil,
-								reject: reject
+								// Deprecate:
+								fulfil: resolve,
+								fulfill: resolve,
+
+								resolve: resolve,
+								reject: reject,
+
+								// for the iframe:
+								transferResolve: resolve,
+								transferReject: reject
 							};
 						}
 
@@ -254,11 +279,28 @@
 
 				function runMethod() {
 					if (self.isContextReady) {
-						self._runMethod(methodName, token, args);
+						self._runMethod(methodName, token, args, transferables);
 					} else {
 						self._enqueue(runMethod);
 					}
 				}
+
+			};
+
+			method.transfer = function() {
+
+				var args = [].slice.call(arguments);
+				var transfersIndex = typeof args[args.length - 1] == 'function' ?
+					args.length - 2:
+					args.length - 1;
+				var transfers = args[transfersIndex];
+
+				if (toString.call(transfers) !== '[object Array]') {
+					throw new Error('Operative:transfer() must be passed an Array of transfers as its last arguments');
+				}
+
+				args[transfersIndex] = new OperativeTransfers(transfers);
+				return method.apply(null, args);
 
 			};
 
@@ -310,15 +352,16 @@
 				var callback = this.callbacks[data.token];
 				var deferred = this.deferreds[data.token];
 
-				delete this.callbacks[data.token];
-				delete this.deferreds[data.token];
-
 				var deferredAction = data.result && data.result.isDeferred && data.result.action;
 
 				if (deferred && deferredAction) {
 					deferred[deferredAction](data.result.args[0]);
 				} else if (callback) {
 					callback.apply(this, data.result.args);
+				} else if (deferred) {
+					// Resolve promise even if result was given
+					// via callback within the worker:
+					deferred.fulfil(data.result.args[0]);
 				}
 
 				break;
@@ -351,6 +394,7 @@
 		}
 
 		worker.postMessage(['PING']); // Initial PING
+		worker.postMessage('EVAL|self.hasTransferSupport=' + transferrableObjSupport);
 
 		worker.addEventListener('message', function(e) {
 			self._onWorkerMessage(e);
@@ -358,14 +402,20 @@
 	};
 
 	WorkerProto._postMessage = function(msg) {
-		return this.worker.postMessage(this._marshal(msg));
+		var transfers = transferrableObjSupport && msg.transfers;
+		return transfers ?
+			this.worker.postMessage(msg, transfers.value) :
+			this.worker.postMessage(
+				this._marshal(msg)
+			);
 	};
 
-	WorkerProto._runMethod = function(methodName, token, args) {
+	WorkerProto._runMethod = function(methodName, token, args, transfers) {
 		this._postMessage({
 			method: methodName,
 			args: args,
-			token: token
+			token: token,
+			transfers: transfers
 		});
 	};
 
@@ -389,7 +439,7 @@
 	IframeProto._setup = function() {
 
 		var self = this;
-		var loadedMethodName = '__operativeIFrameLoaded' + ++_loadedMethodNameI;
+		var loadedMethodName = '__operativeIFrameLoaded' + (++_loadedMethodNameI);
 
 		this.module.isWorker = false;
 
@@ -403,7 +453,7 @@
 		var iDoc = iWin.document;
 
 		// Cross browser (tested in IE8,9) way to call method from within
-		// IFRAME after all <Script>s have loaded:
+		// IFRAME after all < script >s have loaded:
 		window[loadedMethodName] = function() {
 
 			window[loadedMethodName] = null;
@@ -431,28 +481,28 @@
 		iDoc.open();
 		if (this.dependencies.length) {
 			iDoc.write(
-				'<script src="' + this.dependencies.join('"></script><script src="') + '"></script>'
+				'<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>'
 			);
 		}
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write('<script>window.top.' + loadedMethodName + '();</script>');
+		iDoc.write('<script>window.parent.' + loadedMethodName + '();<\/script>');
 		iDoc.close();
 
 	};
 
 	IframeProto._runMethod = function(methodName, token, args) {
 		var self = this;
+
 		var callback = this.callbacks[token];
 		var deferred = this.deferreds[token];
-		delete this.callbacks[token];
-		delete this.deferreds[token];
-		this.iframeWindow.__run__(methodName, args, function() {
+
+		this.iframeWindow.__run__(methodName, args, function(result) {
 			var cb = callback;
+			var df = deferred;
 			if (cb) {
-				callback = null;
 				cb.apply(self, arguments);
-			} else {
-				throw new Error('Operative: You have already returned.');
+			} else if(df) {
+				df.fulfil(result);
 			}
 		}, deferred);
 	};
@@ -478,6 +528,9 @@
 			var singularOperative = function() {
 				return o.api.main.apply(o, arguments);
 			};
+			singularOperative.transfer = function() {
+				return o.api.main.transfer.apply(o, arguments);
+			};
 			// Copy across exposable API to the returned function:
 			for (var i in o.api) {
 				if (hasOwn.call(o.api, i)) {
@@ -490,6 +543,28 @@
 		return new OperativeContext(module, dependencies).api;
 
 	}
+
+	operative.pool = function(size, module, dependencies) {
+		size = 0 | Math.abs(size) || 1;
+		var operatives = [];
+		var current = 0;
+
+		for (var i = 0; i < size; ++i) {
+			operatives.push(operative(module, dependencies));
+		}
+
+		return {
+			terminate: function() {
+				for (var i = 0; i < size; ++i) {
+					operatives[i].destroy();
+				}
+			},
+			next: function() {
+				current = current + 1 === size ? 0 : current + 1;
+				return operatives[current];
+			}
+		};
+	};
 
 /**
  * The boilerplate for the Iframe Context
@@ -515,8 +590,18 @@ function iframeBoilerScript() {
 			return deferred;
 		};
 
+		function callback() {
+			return cb.apply(this, arguments);
+		}
+
+		// Define fallback transfer() method:
+		callback.transfer = function() {
+			// Remove [transfers] list (last argument)
+			return cb.apply(this, [].slice.call(arguments, 0, arguments.length - 1));
+		};
+
 		if (cb) {
-			args.push(cb);
+			args.push(callback);
 		}
 
 		var result = window[methodName].apply(window, args);
@@ -532,7 +617,7 @@ function iframeBoilerScript() {
 
 		if (!isDeferred && !isAsync && result !== void 0) {
 			// Deprecated direct-returning as of 0.2.0
-			cb(result);
+			callback(result);
 		}
 	};
 }
@@ -540,13 +625,14 @@ function iframeBoilerScript() {
 /**
  * The boilerplate for the Worker Blob
  * NOTE:
- *  this'll be executed within an iframe, not here.
+ *  this'll be executed within a worker, not here.
  *  Indented @ Zero to make nicer debug code within worker
  */
 function workerBoilerScript() {
 
 	var postMessage = self.postMessage;
 	var structuredCloningSupport = null;
+	var toString = {}.toString;
 
 	self.console = {};
 	self.isWorker = true;
@@ -573,7 +659,7 @@ function workerBoilerScript() {
 
 		if (structuredCloningSupport == null) {
 
-			// e.data of ['PING'] (An array) indicates transferrableObjSupport
+			// e.data of ['PING'] (An array) indicates structuredCloning support
 			// e.data of '"PING"' (A string) indicates no support (Array has been serialized)
 			structuredCloningSupport = e.data[0] === 'PING';
 
@@ -612,12 +698,23 @@ function workerBoilerScript() {
 			return;
 		}
 
-		args.push(function() {
+		var callback = function() {
 			// Callback function to be passed to operative method
 			returnResult({
 				args: [].slice.call(arguments)
 			});
-		});
+		};
+
+		callback.transfer = function() {
+			var args = [].slice.call(arguments);
+			var transfers = extractTransfers(args);
+			// Callback function to be passed to operative method
+			returnResult({
+				args: args
+			}, transfers);
+		};
+
+		args.push(callback);
 
 		self.async = function() { // Async deprecated as of 0.2.0
 			isAsync = true;
@@ -627,23 +724,36 @@ function workerBoilerScript() {
 		self.deferred = function() {
 			isDeferred = true;
 			var def = {};
-			function fulfill(r) {
+			function resolve(r, transfers) {
 				returnResult({
 					isDeferred: true,
-					action: 'fulfill',
+					action: 'resolve',
 					args: [r]
-				});
+				}, transfers);
 				return def;
 			}
-			function reject(r) {
+			function reject(r, transfers) {
 				returnResult({
 					isDeferred: true,
 					action: 'reject',
 					args: [r]
-				});
+				}, transfers);
 			}
-			def.fulfil = def.fulfill = fulfill;
-			def.reject = reject;
+			// Deprecated:
+			def.fulfil = def.fulfill = def.resolve = function(value) {
+				return resolve(value);
+			};
+			def.reject = function(value) {
+				return reject(value);
+			};
+			def.transferResolve = function(value) {
+				var transfers = extractTransfers(arguments);
+				return resolve(value, transfers);
+			};
+			def.transferReject = function(value) {
+				var transfers = extractTransfers(arguments);
+				return reject(value, transfers);
+			};
 			return def;
 		};
 
@@ -665,16 +775,22 @@ function workerBoilerScript() {
 			throw new Error('Operative: async() called at odd time');
 		};
 
-		function returnResult(res) {
+		function returnResult(res, transfers) {
 			postMessage({
 				cmd: 'result',
 				token: data.token,
 				result: res
-			});
-			// Override with error-thrower if we've already returned:
-			returnResult = function() {
-				throw new Error('Operative: You have already returned.');
-			};
+			}, hasTransferSupport && transfers || []);
+		}
+
+		function extractTransfers(args) {
+			var transfers = args[args.length - 1];
+
+			if (toString.call(transfers) !== '[object Array]') {
+				throw new Error('Operative: callback.transfer() must be passed an Array of transfers as its last arguments');
+			}
+
+			return transfers;
 		}
 	});
 }
