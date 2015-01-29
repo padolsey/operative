@@ -195,9 +195,13 @@
 					args.length - 2:
 					args.length - 1;
 				var transfers = args[transfersIndex];
+				var transfersType = toString.call(transfers);
 
-				if (toString.call(transfers) !== '[object Array]') {
-					throw new Error('Operative:transfer() must be passed an Array of transfers as its last arguments');
+				if (transfersType !== '[object Array]') {
+					throw new Error(
+						'Operative:transfer() must be passed an Array of transfers as its last arguments ' +
+						'(Expected: [object Array], Received: ' + transfersType + ')'
+					);
 				}
 
 				args[transfersIndex] = new OperativeTransfers(transfers);
