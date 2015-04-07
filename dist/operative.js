@@ -310,8 +310,10 @@
 				var callback = this.callbacks[data.token];
 				var deferred = this.deferreds[data.token];
 
-				delete this.callbacks[data.token];
-				delete this.deferreds[data.token];
+				if (this.module.pedantic !== true) {
+					delete this.callbacks[data.token];
+					delete this.deferreds[data.token];
+				}
 
 				var deferredAction = data.result && data.result.isDeferred && data.result.action;
 
@@ -672,7 +674,7 @@ function workerBoilerScript() {
 				result: res
 			});
 
-			//If supports mutli callbacks, then so be it, but it is pedantic
+			//If supports multi callbacks, then so be it, but it is pedantic
 			if (self.pedantic) return;
 
 			// Override with error-thrower if we've already returned:
