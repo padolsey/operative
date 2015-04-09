@@ -2,6 +2,7 @@
 
 	var hasOwn = {}.hasOwnProperty;
 	var slice = [].slice;
+	var toString = {}.toString;
 
 	operative.Operative = OperativeContext;
 

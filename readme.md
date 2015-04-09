@@ -294,6 +294,13 @@ $ grunt
 
 ### Changelog
 
+ * 0.4.0-rc1
+  * Refactor test suites (use mocha instead of jasmine and fix various flakey specs).
+  * Deprecate `deferred.fulfil()` (worker context promise API) in favour of `deferred.resolve()` (alias for `fulfil` still exists).
+  * Introduce [Transfers API](https://github.com/padolsey/operative/wiki/Transfers-API) ([#23](https://github.com/padolsey/operative/issues/23)).
+  * Fix [#18](https://github.com/padolsey/operative/issues/18).
+  * Retain callbacks (allowing them to be called again and again -- a la Events). See [#15](https://github.com/padolsey/operative/issues/15).
+  * Introduce small benchmarks suite
  * 0.3.2 (7 Jul 2014) AMD Support + Align correctly with ES6 Promise API (PRs [21](https://github.com/padolsey/operative/pull/21) and [22](https://github.com/padolsey/operative/pull/22) -- thanks [Rich](https://github.com/Rich-Harris)!)
  * 0.3.1 (27 Apr 2014) Improved release flow via [PR #20](https://github.com/padolsey/operative/pull/20).
  * 0.3.0 (21 Sep 2013) API: `terminate` aliased to `destroy` (deprecating the latter). See [Issue #14](https://github.com/padolsey/operative/issues/14).
