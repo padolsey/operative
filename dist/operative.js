@@ -5,10 +5,15 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.0-rc2
+ * @version 0.4.0
  * @license MIT
  */
 (function() {
+
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
 
 	var hasOwn = {}.hasOwnProperty;
 
@@ -76,14 +81,6 @@
 	operative.hasWorkerViaBlobSupport = false;
 	operative.hasTransferSupport = false;
 
-	if (typeof window == 'undefined' && self.importScripts) {
-		// I'm a worker! Run the boiler-script:
-		// (Operative itself is called in IE10 as a worker,
-		//	to avoid SecurityErrors)
-		workerBoilerScript();
-		return;
-	}
-
 	// Default base URL (to be prepended to relative dependency URLs)
 	// is current page's parent dir:
 	var baseURL = (
@@ -117,8 +114,14 @@
 }());
 (function() {
 
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
+
 	var hasOwn = {}.hasOwnProperty;
 	var slice = [].slice;
+	var toString = {}.toString;
 
 	operative.Operative = OperativeContext;
 
@@ -312,9 +315,13 @@
 					args.length - 2:
 					args.length - 1;
 				var transfers = args[transfersIndex];
+				var transfersType = toString.call(transfers);
 
-				if (toString.call(transfers) !== '[object Array]') {
-					throw new Error('Operative:transfer() must be passed an Array of transfers as its last arguments');
+				if (transfersType !== '[object Array]') {
+					throw new Error(
+						'Operative:transfer() must be passed an Array of transfers as its last arguments ' +
+						'(Expected: [object Array], Received: ' + transfersType + ')'
+					);
 				}
 
 				args[transfersIndex] = new OperativeTransfers(transfers);
@@ -331,6 +338,14 @@
 
 }());
 (function() {
+
+	if (typeof window == 'undefined' && self.importScripts) {
+		// I'm a worker! Run the boiler-script:
+		// (Operative itself is called in IE10 as a worker,
+		//	to avoid SecurityErrors)
+		workerBoilerScript();
+		return;
+	}
 
 	var Operative = operative.Operative;
 
@@ -498,6 +513,7 @@ function workerBoilerScript() {
 
 	var postMessage = self.postMessage;
 	var structuredCloningSupport = null;
+	var toString = {}.toString;
 
 	self.console = {};
 	self.isWorker = true;
@@ -552,7 +568,6 @@ function workerBoilerScript() {
 
 		var defs = data.definitions;
 		var isDeferred = false;
-		var isAsync = false;
 		var args = data.args;
 
 		if (defs) {
@@ -580,11 +595,6 @@ function workerBoilerScript() {
 		};
 
 		args.push(callback);
-
-		self.async = function() { // Async deprecated as of 0.2.0
-			isAsync = true;
-			return function() { returnResult({ args: [].slice.call(arguments) }); };
-		};
 
 		self.deferred = function() {
 			isDeferred = true;
@@ -625,7 +635,7 @@ function workerBoilerScript() {
 		// Call actual operative method:
 		var result = self[data.method].apply(self, args);
 
-		if (!isDeferred && !isAsync && result !== void 0) {
+		if (!isDeferred && result !== void 0) {
 			// Deprecated direct-returning as of 0.2.0
 			returnResult({
 				args: [result]
@@ -634,10 +644,6 @@ function workerBoilerScript() {
 
 		self.deferred = function() {
 			throw new Error('Operative: deferred() called at odd time');
-		};
-
-		self.async = function() { // Async deprecated as of 0.2.0
-			throw new Error('Operative: async() called at odd time');
 		};
 
 		function returnResult(res, transfers) {
@@ -662,6 +668,11 @@ function workerBoilerScript() {
 
 }());
 (function() {
+
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
 
 	var Operative = operative.Operative;
 
@@ -719,13 +730,19 @@ function workerBoilerScript() {
 		};
 
 		iDoc.open();
+
+		var documentContent = '';
+
 		if (this.dependencies.length) {
-			iDoc.write(
-				'<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>'
-			);
+			documentContent += '\n<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>';
 		}
+		
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write('<script>window.parent.' + loadedMethodName + '();<\/script>');
+		iDoc.write(
+			documentContent +
+			'\n<script>setTimeout(window.parent.' + loadedMethodName + ',0);<\/script>'
+		);
+
 		iDoc.close();
 
 	};
@@ -764,13 +781,7 @@ function iframeBoilerScript() {
 	// Called from parent-window:
 	window.__run__ = function(methodName, args, cb, deferred) {
 
-		var isAsync = false;
 		var isDeferred = false;
-
-		window.async = function() {
-			isAsync = true;
-			return cb;
-		};
 
 		window.deferred = function() {
 			isDeferred = true;
@@ -793,16 +804,12 @@ function iframeBoilerScript() {
 
 		var result = window[methodName].apply(window, args);
 
-		window.async = function() {
-			throw new Error('Operative: async() called at odd time');
-		};
-
 		window.deferred = function() {
 			throw new Error('Operative: deferred() called at odd time');
 		};
 
 
-		if (!isDeferred && !isAsync && result !== void 0) {
+		if (!isDeferred && result !== void 0) {
 			callback(result);
 		}
 	};
