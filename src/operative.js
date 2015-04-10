@@ -9,6 +9,11 @@
  */
 (function() {
 
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
+
 	var hasOwn = {}.hasOwnProperty;
 
 	if (typeof define === 'function' && define.amd) {
@@ -74,13 +79,6 @@
 	operative.hasWorkerSupport = !!window.Worker;
 	operative.hasWorkerViaBlobSupport = false;
 	operative.hasTransferSupport = false;
-
-	if (typeof window == 'undefined' && self.importScripts) {
-		// I'm a worker:
-		// Exit and hope that BrowserWorker will pick up the pieces.
-		// I.e. Let BrowserWorker.js run its workerBoilerScript.
-		return;
-	}
 
 	// Default base URL (to be prepended to relative dependency URLs)
 	// is current page's parent dir:

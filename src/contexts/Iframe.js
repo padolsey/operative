@@ -5,6 +5,11 @@
  */
 (function() {
 
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
+
 	var Operative = operative.Operative;
 
 	/**
@@ -69,7 +74,10 @@
 		}
 		
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write(documentContent + '\n<script>window.parent.' + loadedMethodName + '();<\/script>');
+		iDoc.write(
+			documentContent +
+			'\n<script>setTimeout(window.parent.' + loadedMethodName + ',0);<\/script>'
+		);
 
 		iDoc.close();
 

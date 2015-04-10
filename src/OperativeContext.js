@@ -1,5 +1,10 @@
 (function() {
 
+	if (typeof window == 'undefined' && self.importScripts) {
+		// Exit if operative.js is being loaded as worker (no blob support flow);
+		return;
+	}
+
 	var hasOwn = {}.hasOwnProperty;
 	var slice = [].slice;
 	var toString = {}.toString;
