@@ -294,6 +294,10 @@ $ grunt
 
 ### Changelog
 
+ * 0.4.0 (10 Apr 2015)
+  * Removed deprecated `async()` method in favor of callbacks or promises
+  * Refactor / Restructure code to make maintenance a bit easier
+  * Use `mocha_phantomjs` to setup mocha testing via grunt
  * 0.4.0-rc1
   * Refactor test suites (use mocha instead of jasmine and fix various flakey specs).
   * Deprecate `deferred.fulfil()` (worker context promise API) in favour of `deferred.resolve()` (alias for `fulfil` still exists).

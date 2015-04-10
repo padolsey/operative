@@ -14,17 +14,26 @@
 		<script src="../../src/OperativeContext.js"></script>
 		<script src="../../src/contexts/BrowserWorker.js"></script>
 		<script src="../../src/contexts/Iframe.js"></script>
+
+		<script>
+			operative.setSelfURL('../../src/contexts/BrowserWorker.js');
+		</script>
 		
 		<script src="../../node_modules/mocha/mocha.js"></script>
 		<script src="../../node_modules/chai/chai.js"></script>
+
 		<script>
-			mocha.setup('bdd');
-			window.expect = chai.expect;
+			mocha.ui('bdd');
+			mocha.reporter('html');
+			expect = chai.expect;
 		</script>
+
 		<script src="../operative.spec.js"></script>
 		<script src="../operative.iframe.spec.js"></script>
+
 		<script>
-			mocha.run();
+			if (window.mochaPhantomJS) { mochaPhantomJS.run(); }
+			else { mocha.run(); }
 		</script>
 	</body>
 </html>

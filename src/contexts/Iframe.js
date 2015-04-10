@@ -61,13 +61,16 @@
 		};
 
 		iDoc.open();
+
+		var documentContent = '';
+
 		if (this.dependencies.length) {
-			iDoc.write(
-				'<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>'
-			);
+			documentContent += '\n<script src="' + this.dependencies.join('"><\/script><script src="') + '"><\/script>';
 		}
+		
 		// Place <script> at bottom to tell parent-page when dependencies are loaded:
-		iDoc.write('<script>window.parent.' + loadedMethodName + '();<\/script>');
+		iDoc.write(documentContent + '\n<script>window.parent.' + loadedMethodName + '();<\/script>');
+
 		iDoc.close();
 
 	};
@@ -106,13 +109,7 @@ function iframeBoilerScript() {
 	// Called from parent-window:
 	window.__run__ = function(methodName, args, cb, deferred) {
 
-		var isAsync = false;
 		var isDeferred = false;
-
-		window.async = function() {
-			isAsync = true;
-			return cb;
-		};
 
 		window.deferred = function() {
 			isDeferred = true;
@@ -135,16 +132,12 @@ function iframeBoilerScript() {
 
 		var result = window[methodName].apply(window, args);
 
-		window.async = function() {
-			throw new Error('Operative: async() called at odd time');
-		};
-
 		window.deferred = function() {
 			throw new Error('Operative: deferred() called at odd time');
 		};
 
 
-		if (!isDeferred && !isAsync && result !== void 0) {
+		if (!isDeferred && result !== void 0) {
 			callback(result);
 		}
 	};

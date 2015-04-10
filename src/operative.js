@@ -76,10 +76,9 @@
 	operative.hasTransferSupport = false;
 
 	if (typeof window == 'undefined' && self.importScripts) {
-		// I'm a worker! Run the boiler-script:
-		// (Operative itself is called in IE10 as a worker,
-		//	to avoid SecurityErrors)
-		workerBoilerScript();
+		// I'm a worker:
+		// Exit and hope that BrowserWorker will pick up the pieces.
+		// I.e. Let BrowserWorker.js run its workerBoilerScript.
 		return;
 	}
 

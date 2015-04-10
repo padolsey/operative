@@ -35,15 +35,30 @@ module.exports = function(grunt) {
 				banner: DEBUG_BANNER,
 				stripBanners: true
 			},
-      dist_browser: {
-        src: [
-          'src/operative.js',
-          'src/OperativeContext.js',
-          'src/contexts/BrowserWorker.js',
-          'src/contexts/Iframe.js'
-        ],
-        dest: 'dist/operative.js'
-      }
+			dist_browser: {
+				src: [
+					'src/operative.js',
+					'src/OperativeContext.js',
+					'src/contexts/BrowserWorker.js',
+					'src/contexts/Iframe.js'
+				],
+				dest: 'dist/operative.js'
+			}
+		},
+		mocha_phantomjs: {
+			all: {
+				options: {
+					urls: ['http://localhost:8000/test/resources/run.html']
+				}
+			}
+		},
+		connect: {
+			server: {
+				options: {
+					port: 8000,
+					base: '.'
+				}
+			}
 		},
 		bumpup: ['package.json', 'bower.json', 'component.json']
 	});
@@ -51,13 +66,16 @@ module.exports = function(grunt) {
 	grunt.loadNpmTasks('grunt-contrib-uglify');
 	grunt.loadNpmTasks('grunt-contrib-concat');
 	grunt.loadNpmTasks('grunt-bumpup');
+	grunt.loadNpmTasks('grunt-contrib-connect');
+	grunt.loadNpmTasks('grunt-mocha-phantomjs');
 
 	grunt.registerTask('bump', function (type) {
 		type = type ? type : 'patch';
 		grunt.task.run('bumpup:' + type);
 	});
 
-	grunt.registerTask('default', ['build']);
+	grunt.registerTask('default', ['test', 'build']);
 	grunt.registerTask('build', ['concat:dist_browser', 'uglify:dist']);
+	grunt.registerTask('test', ['connect', 'mocha_phantomjs']);
 
 };

@@ -3,6 +3,14 @@
  */
 (function() {
 
+	if (typeof window == 'undefined' && self.importScripts) {
+		// I'm a worker! Run the boiler-script:
+		// (Operative itself is called in IE10 as a worker,
+		//	to avoid SecurityErrors)
+		workerBoilerScript();
+		return;
+	}
+
 	var Operative = operative.Operative;
 
 	var scripts = document.getElementsByTagName('script');
@@ -169,6 +177,7 @@ function workerBoilerScript() {
 
 	var postMessage = self.postMessage;
 	var structuredCloningSupport = null;
+	var toString = {}.toString;
 
 	self.console = {};
 	self.isWorker = true;
@@ -223,7 +232,6 @@ function workerBoilerScript() {
 
 		var defs = data.definitions;
 		var isDeferred = false;
-		var isAsync = false;
 		var args = data.args;
 
 		if (defs) {
@@ -251,11 +259,6 @@ function workerBoilerScript() {
 		};
 
 		args.push(callback);
-
-		self.async = function() { // Async deprecated as of 0.2.0
-			isAsync = true;
-			return function() { returnResult({ args: [].slice.call(arguments) }); };
-		};
 
 		self.deferred = function() {
 			isDeferred = true;
@@ -296,7 +299,7 @@ function workerBoilerScript() {
 		// Call actual operative method:
 		var result = self[data.method].apply(self, args);
 
-		if (!isDeferred && !isAsync && result !== void 0) {
+		if (!isDeferred && result !== void 0) {
 			// Deprecated direct-returning as of 0.2.0
 			returnResult({
 				args: [result]
@@ -305,10 +308,6 @@ function workerBoilerScript() {
 
 		self.deferred = function() {
 			throw new Error('Operative: deferred() called at odd time');
-		};
-
-		self.async = function() { // Async deprecated as of 0.2.0
-			throw new Error('Operative: async() called at odd time');
 		};
 
 		function returnResult(res, transfers) {

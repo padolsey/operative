@@ -28,36 +28,6 @@ describe('Operative (worker Context)', function() {
 		});
 	});
 
-	describe('Async Operative', function() {
-		it('Should be able to return [within the worker] asynchronously', function(done) {
-			var o = operative({
-				doAsyncFoo: function() {
-					var finish = this.async();
-					setTimeout(function() {
-						finish(123);
-					}, 150);
-				},
-				doAsyncBar: function() {
-					var finish = this.async();
-					setTimeout(function() {
-						finish(456);
-					}, 10);
-				}
-			});
-
-			var result = [];
-
-			o.doAsyncFoo(function(v) {
-				result.push(v);
-				expect(result).to.deep.equal([456, 123]);
-				done();
-			});
-			o.doAsyncBar(function(v) {
-				result.push(v);
-			});
-		});
-	});
-
 	describe('Multiple Operatives', function() {
 		it('Each complete asynchronously', function(done) {
 			var s = [];
@@ -244,13 +214,13 @@ describe('Operative (worker Context)', function() {
 					var progress = 0;
 					var me = setInterval(function() {
 						progress++;
-						if (progress === 10) {
+						if (progress === 5) {
 							clearInterval(me);
-							cb({ progress: 10, done: true });
+							cb({ progress: 5, done: true });
 						} else {
 							cb({ progress: progress, done: false });
 						}
-					}, 3);
+					}, 30);
 
 				}
 			});
@@ -260,9 +230,9 @@ describe('Operative (worker Context)', function() {
 			o.process(function(status) {
 				called++;
 				expect(status.progress).to.be.above(0);
-				if (status.progress === 10) {
+				if (status.progress === 5) {
 					expect(status.done).to.equal(true);
-					expect(called).to.equal(10); // called ten times
+					expect(called).to.equal(5); // called five times
 					done();
 				}
 			});
@@ -276,6 +246,7 @@ describe('Operative (worker Context)', function() {
 			it('Transfers ownership of the buffer', function(done) {
 
 				if (!operative.hasTransferSupport && typeof Uint8Array == 'undefined') {
+					done();
 					return;
 				}
 
@@ -311,6 +282,7 @@ describe('Operative (worker Context)', function() {
 			it('Transfers ownership of the buffer', function(done) {
 
 				if (!operative.hasTransferSupport && typeof Uint8Array == 'undefined') {
+					done();
 					return;
 				}
 
