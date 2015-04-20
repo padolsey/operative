@@ -5,15 +5,23 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.0
+ * @version 0.4.1
  * @license MIT
  */
-(function() {
-
+(function (root, factory) {
 	if (typeof window == 'undefined' && self.importScripts) {
 		// Exit if operative.js is being loaded as worker (no blob support flow);
 		return;
 	}
+
+	if (typeof define === 'function' && define.amd) {
+		define([], factory);
+	} else if (typeof exports === 'object') {
+		module.exports = factory();
+	} else {
+		root.operative = factory();
+	}
+}(this, function () {
 
 	var hasOwn = {}.hasOwnProperty;
 
@@ -111,7 +119,9 @@
 		return baseURL;
 	};
 
-}());
+	return operative;
+}));
+
 (function() {
 
 	if (typeof window == 'undefined' && self.importScripts) {
