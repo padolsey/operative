@@ -104,7 +104,7 @@ var craziness = operative({
 });
 
 craziness.doCrazy(function(result) {
-	// Console outputs: Craziness: 14806.419ms 
+	// Console outputs: Craziness: 14806.419ms
 	result; // => "I am done!"
 });
 ```
@@ -327,3 +327,4 @@ $ grunt
   * [PG Herveou](https://github.com/pgherveou)
   * [Luke Bunselmeyer](https://github.com/wmluke)
   * [Rich Harris](https://github.com/Rich-Harris)
+  * [Riley Shaw](https://github.com/rileyjshaw)
