@@ -204,6 +204,39 @@ describe('Operative (worker Context)', function() {
 		});
 	});
 
+	describe('No blob-support case', function() {
+		beforeEach(function() {
+			operative.Operative.BrowserWorker.prototype._isWorkerViaBlobSupported = function() {
+				return false;
+			};
+		});
+		it('Works correctly', function(done) {
+			var o = operative(function() {
+				return 888;
+			});
+			o(function(v) {
+				expect(v).to.equal(888);
+				done();
+			});
+		});
+		describe('Explicitly setting the self URL', function() {
+			beforeEach(function() {
+				operative.setSelfURL(
+					'../../src/contexts/BrowserWorker.js?test-explicit'
+				);
+			});
+			it('Works; a new Worker is created with that URL', function(done) {
+				var o = operative(function() {
+					return self.location.href;
+				});
+				o(function(url) {
+					expect(url).to.contain('?test-explicit');
+					done();
+				});
+			});
+		});
+	});
+
 	describe('Perpetual callbacks', function() {
 
 		it('Is possible to keep calling the same callback (with progress etc.)', function(done) {

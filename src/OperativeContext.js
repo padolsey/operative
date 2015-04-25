@@ -22,7 +22,7 @@
 	 * A type of context: could be a worker, an iframe, etc.
 	 * @param {Object} module Object containing methods/properties
 	 */
-	function OperativeContext(module, dependencies, getBase) {
+	function OperativeContext(module, dependencies, getBaseURL, getSelfURL) {
 
 		var _self = this;
 
@@ -37,7 +37,8 @@
 		this._curToken = 0;
 		this._queue = [];
 
-		this._getBase = getBase;
+		this._getBaseURL = getBaseURL;
+		this._getSelfURL = getSelfURL;
 
 		this.isDestroyed = false;
 		this.isContextReady = false;
@@ -87,7 +88,7 @@
 			for (var i = 0, l = deps.length; i < l; ++i) {
 				var dep = deps[i];
 				if (!/\/\//.test(dep)) {
-					deps[i] = dep.replace(/^\/?/, this._getBase().replace(/([^\/])$/, '$1/'));
+					deps[i] = dep.replace(/^\/?/, this._getBaseURL().replace(/([^\/])$/, '$1/'));
 				}
 			}
 		},
