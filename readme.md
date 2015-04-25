@@ -31,10 +31,10 @@ npm install operative
 
 *Note: Operative has not been tested in non-browser envs*
 
-Or just grab the built JS file from `dist/`, also available here (0.3.0):
+Or just grab the built JS file from `dist/`, also available here (0.4.2):
 
- * https://raw.github.com/padolsey/operative/0.3.0/dist/operative.js
- * https://raw.github.com/padolsey/operative/0.3.0/dist/operative.min.js
+ * https://raw.github.com/padolsey/operative/0.4.2/dist/operative.js
+ * https://raw.github.com/padolsey/operative/0.4.2/dist/operative.min.js
 
 ### Creating an Operative Module
 
@@ -294,6 +294,8 @@ $ grunt
 
 ### Changelog
 
+ * 0.4.2 (25 Apr 2015)
+  * Added support for CommonJS
  * 0.4.0 (10 Apr 2015)
   * Removed deprecated `async()` method in favor of callbacks or promises
   * Refactor / Restructure code to make maintenance a bit easier

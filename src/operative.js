@@ -25,12 +25,6 @@
 
 	var hasOwn = {}.hasOwnProperty;
 
-	if (typeof define === 'function' && define.amd) {
-		define( function () { return operative; });
-	} else {
-		window.operative = operative;
-	}
-
 	operative.pool = function(size, module, dependencies) {
 		size = 0 | Math.abs(size) || 1;
 		var operatives = [];
