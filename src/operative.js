@@ -58,8 +58,8 @@
 	 */
 	function operative(module, dependencies) {
 
-		var getBase = operative.getBaseURL.bind(this);
-		var getSelf = operative.getSelfURL.bind(this);
+		var getBase = operative.getBaseURL;
+		var getSelf = operative.getSelfURL;
 
 		var OperativeContext = operative.hasWorkerSupport ? operative.Operative.BrowserWorker : operative.Operative.Iframe;
 
