@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.1
+ * @version 0.4.2
  * @license MIT
  */
 (function (root, factory) {
@@ -25,11 +25,11 @@
 
 	var hasOwn = {}.hasOwnProperty;
 
-	if (typeof define === 'function' && define.amd) {
-		define( function () { return operative; });
-	} else {
-		window.operative = operative;
-	}
+	// Note: This will work only in the built dist:
+	// (Otherwise you must explicitly set selfURL to BrowserWorker.js)
+	var scripts = document.getElementsByTagName('script');
+	var opScript = scripts[scripts.length - 1];
+	var opScriptURL = /operative/.test(opScript.src) && opScript.src;
 
 	operative.pool = function(size, module, dependencies) {
 		size = 0 | Math.abs(size) || 1;
@@ -59,12 +59,13 @@
 	function operative(module, dependencies) {
 
 		var getBase = operative.getBaseURL.bind(this);
+		var getSelf = operative.getSelfURL.bind(this);
 
 		var OperativeContext = operative.hasWorkerSupport ? operative.Operative.BrowserWorker : operative.Operative.Iframe;
 
 		if (typeof module == 'function') {
 			// Allow a single function to be passed.
-			var o = new OperativeContext({ main: module }, dependencies, getBase);
+			var o = new OperativeContext({ main: module }, dependencies, getBase, getSelf);
 			var singularOperative = function() {
 				return o.api.main.apply(o, arguments);
 			};
@@ -80,7 +81,7 @@
 			return singularOperative;
 		}
 
-		return new OperativeContext(module, dependencies, getBase).api;
+		return new OperativeContext(module, dependencies, getBase, getSelf).api;
 
 	}
 
@@ -107,9 +108,23 @@
 		return new F();
 	};
 
+	/**
+	 * Set and get Self URL, i.e. the url of the
+	 * operative script itself.
+	 */
+
 	operative.setSelfURL = function(url) {
 		opScriptURL = url;
 	};
+
+	operative.getSelfURL = function(url) {
+		return opScriptURL;
+	};
+
+	/**
+	 * Set and get Base URL, i.e. the path used
+	 * as a base for getting dependencies
+	 */
 
 	operative.setBaseURL = function(base) {
 		baseURL = base;
@@ -146,7 +161,7 @@
 	 * A type of context: could be a worker, an iframe, etc.
 	 * @param {Object} module Object containing methods/properties
 	 */
-	function OperativeContext(module, dependencies, getBase) {
+	function OperativeContext(module, dependencies, getBaseURL, getSelfURL) {
 
 		var _self = this;
 
@@ -161,7 +176,8 @@
 		this._curToken = 0;
 		this._queue = [];
 
-		this._getBase = getBase;
+		this._getBaseURL = getBaseURL;
+		this._getSelfURL = getSelfURL;
 
 		this.isDestroyed = false;
 		this.isContextReady = false;
@@ -211,7 +227,7 @@
 			for (var i = 0, l = deps.length; i < l; ++i) {
 				var dep = deps[i];
 				if (!/\/\//.test(dep)) {
-					deps[i] = dep.replace(/^\/?/, this._getBase().replace(/([^\/])$/, '$1/'));
+					deps[i] = dep.replace(/^\/?/, this._getBaseURL().replace(/([^\/])$/, '$1/'));
 				}
 			}
 		},
@@ -359,10 +375,6 @@
 
 	var Operative = operative.Operative;
 
-	var scripts = document.getElementsByTagName('script');
-	var opScript = scripts[scripts.length - 1];
-	var opScriptURL = /operative/.test(opScript.src) && opScript.src;
-
 	var URL = window.URL || window.webkitURL;
 	var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
 
@@ -405,7 +417,7 @@
 	/**
 	 * Operative BrowserWorker
 	 */
-	Operative.BrowserWorker = function BrowserWorker(module) {
+	Operative.BrowserWorker = function BrowserWorker() {
 		Operative.apply(this, arguments);
 	};
 
@@ -457,26 +469,33 @@
 		}
 	};
 
+	WorkerProto._isWorkerViaBlobSupported = function() {
+		return workerViaBlobSupport;
+	};
+
 	WorkerProto._setup = function() {
 		var self = this;
 
 		var worker;
+		var selfURL = this._getSelfURL();
+		var blobSupport = this._isWorkerViaBlobSupported();
 		var script = this._buildContextScript(
 			// The script is not included if we're Eval'ing this file directly:
-			workerViaBlobSupport ? workerBoilerScript : ''
+			blobSupport ? workerBoilerScript : ''
 		);
 
 		if (this.dependencies.length) {
 			script = 'importScripts("' + this.dependencies.join('", "') + '");\n' + script;
 		}
 
-		if (workerViaBlobSupport) {
+		if (blobSupport) {
 			worker = this.worker = new Worker( makeBlobURI(script) );
 		}	else {
-			if (!opScriptURL) {
+
+			if (!selfURL) {
 				throw new Error('Operaritve: No operative.js URL available. Please set via operative.setSelfURL(...)');
 			}
-			worker = this.worker = new Worker( opScriptURL );
+			worker = this.worker = new Worker( selfURL );
 			// Marshal-agnostic initial message is boiler-code:
 			// (We don't yet know if structured-cloning is supported so we send a string)
 			worker.postMessage('EVAL|' + script);
