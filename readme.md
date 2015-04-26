@@ -17,8 +17,39 @@ Utilising unabstracted Workers can be cumbersome and awkward. Having to design a
 
 Even with Operative you are still subject to the constraints of Web Workers, i.e.
 
- * No DOM/BOM Access
- * No synchronous communication with parent page
+ * No DOM/BOM Access.
+ * No synchronous communication with parent page.
+ * An entirely separate execution context (no shared scope/variables).
+ * Limitations on data transfer depending on browser.
+
+And it won't make things uniformly faster or less burdensome on the UI. Operative will fall-back to using iframes in older browsers, which gives you no non-blocking advantage.
+
+Non-blob worker support (i.e. for IE10) requires that you have a same-origin copy of Operative (this means you can't solely rely on CDNs or elsewhere-hosted scripts if you want to support IE10).
+
+### Browser Support
+
+Operative `0.4.3` has been explicitly tested in:
+
+ * Chrome 14, 23, 29, 37, 42
+ * Firefox 3, 10, 18, 23, 32
+ * IE 8, 9, 10 (Windows 7)
+ * IE 11 (Windows 10)
+ * Opera 25 (Mac)
+ * Opera 10.6 (Windows 7)
+ * Safari 5.1 (Windows 7)
+ * Safari 6, 8 (Mac)
+ * Safari (iPad Air, iOS 8)
+ * Safari (iPhone 4S, iOS 5.1)
+
+Support for Workers, with varying degrees of support for Transferables and Blobs:
+
+ * FF 17+
+ * Chrome 7+
+ * Safari 4+
+ * Opera 11+
+ * IE10+
+
+*Note: Operative has not been tested in non-browser envs*
 
 ### Quick install
 
@@ -29,12 +60,10 @@ bower install operative
 npm install operative
 ```
 
-*Note: Operative has not been tested in non-browser envs*
+Or just grab the built JS file from `dist/`, also available here (0.4.3):
 
-Or just grab the built JS file from `dist/`, also available here (0.4.2):
-
- * https://raw.github.com/padolsey/operative/0.4.2/dist/operative.js
- * https://raw.github.com/padolsey/operative/0.4.2/dist/operative.min.js
+ * https://raw.github.com/padolsey/operative/0.4.3/dist/operative.js
+ * https://raw.github.com/padolsey/operative/0.4.3/dist/operative.min.js
 
 ### Creating an Operative Module
 
@@ -42,8 +71,8 @@ An Operative module is defined as an object containing properties/methods:
 
 ```js
 var calculator = operative({
-	add: function(a, b, cb) {
-		cb( a + b );
+	add: function(a, b, callback) {
+		callback( a + b );
 	}
 });
 ```
@@ -109,14 +138,6 @@ craziness.doCrazy(function(result) {
 });
 ```
 
-### Browser Support for Workers
-
- * FF 17+
- * Chrome 7+
- * Safari 4+
- * Opera 11+
- * IE10+
-
 ### Degraded Operative
 
 Operative degrades in this order:
@@ -135,7 +156,9 @@ If you are looking to support this fully degraded state (honestly, only do it if
 
 ### No Worker-Via-Blob Support
 
-Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4.0) via eval, and it requires `operative.js` or `operative.min.js` to be its own file and included in the page via a `<script>` tag. Or, alternatively, if its bundled with other JS, you'll have to have an additional `operative.js` and specify it *before creating an operative module* via `operative.setSelfURL('path/to/operative.js')` (this'll only generate a request where the aforementioned support is lacking). Due to the usage of eval in these cases it is recommended to debug your operatives in more capable browsers.
+Operative supports browsers with no worker-via-blob support (e.g. IE10, Safari 4.0) via eval, and it requires `operative.js` or `operative.min.js` to be its own file and included in the page via a `<script>` tag. This file must be on the same origin as the parent page.
+
+If you're bundling Operative with other JS, you'll have to have an additional (same-origin!) `operative.js` and specify it *before creating an operative module* via `operative.setSelfURL('path/to/operative.js')` (this'll only generate a request where the aforementioned support is lacking). Due to the usage of eval in these cases it is recommended to debug your operatives in more capable browsers.
 
 ### Operative API Documentation
 
@@ -294,6 +317,9 @@ $ grunt
 
 ### Changelog
 
+ * 0.4.3 (26 Apr 2016)
+  * Fixed self-url setting (see [#36](https://github.com/padolsey/operative/issues/36))
+  * Improved readme
  * 0.4.2 (25 Apr 2015)
   * Added support for CommonJS
  * 0.4.0 (10 Apr 2015)
