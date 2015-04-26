@@ -317,7 +317,7 @@ $ grunt
 
 ### Changelog
 
- * 0.4.3 (26 Apr 2016)
+ * 0.4.3 (26 Apr 2015)
   * Fixed self-url setting (see [#36](https://github.com/padolsey/operative/issues/36))
   * Improved readme
  * 0.4.2 (25 Apr 2015)
