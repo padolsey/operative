@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.2
+ * @version 0.4.3
  * @license MIT
  */
 (function (root, factory) {
@@ -58,8 +58,8 @@
 	 */
 	function operative(module, dependencies) {
 
-		var getBase = operative.getBaseURL.bind(this);
-		var getSelf = operative.getSelfURL.bind(this);
+		var getBase = operative.getBaseURL;
+		var getSelf = operative.getSelfURL;
 
 		var OperativeContext = operative.hasWorkerSupport ? operative.Operative.BrowserWorker : operative.Operative.Iframe;
 
