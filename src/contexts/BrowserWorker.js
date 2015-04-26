@@ -13,10 +13,6 @@
 
 	var Operative = operative.Operative;
 
-	var scripts = document.getElementsByTagName('script');
-	var opScript = scripts[scripts.length - 1];
-	var opScriptURL = /operative/.test(opScript.src) && opScript.src;
-
 	var URL = window.URL || window.webkitURL;
 	var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder;
 
@@ -59,7 +55,7 @@
 	/**
 	 * Operative BrowserWorker
 	 */
-	Operative.BrowserWorker = function BrowserWorker(module) {
+	Operative.BrowserWorker = function BrowserWorker() {
 		Operative.apply(this, arguments);
 	};
 
@@ -111,26 +107,33 @@
 		}
 	};
 
+	WorkerProto._isWorkerViaBlobSupported = function() {
+		return workerViaBlobSupport;
+	};
+
 	WorkerProto._setup = function() {
 		var self = this;
 
 		var worker;
+		var selfURL = this._getSelfURL();
+		var blobSupport = this._isWorkerViaBlobSupported();
 		var script = this._buildContextScript(
 			// The script is not included if we're Eval'ing this file directly:
-			workerViaBlobSupport ? workerBoilerScript : ''
+			blobSupport ? workerBoilerScript : ''
 		);
 
 		if (this.dependencies.length) {
 			script = 'importScripts("' + this.dependencies.join('", "') + '");\n' + script;
 		}
 
-		if (workerViaBlobSupport) {
+		if (blobSupport) {
 			worker = this.worker = new Worker( makeBlobURI(script) );
 		}	else {
-			if (!opScriptURL) {
+
+			if (!selfURL) {
 				throw new Error('Operaritve: No operative.js URL available. Please set via operative.setSelfURL(...)');
 			}
-			worker = this.worker = new Worker( opScriptURL );
+			worker = this.worker = new Worker( selfURL );
 			// Marshal-agnostic initial message is boiler-code:
 			// (We don't yet know if structured-cloning is supported so we send a string)
 			worker.postMessage('EVAL|' + script);

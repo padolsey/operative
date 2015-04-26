@@ -25,6 +25,12 @@
 
 	var hasOwn = {}.hasOwnProperty;
 
+	// Note: This will work only in the built dist:
+	// (Otherwise you must explicitly set selfURL to BrowserWorker.js)
+	var scripts = document.getElementsByTagName('script');
+	var opScript = scripts[scripts.length - 1];
+	var opScriptURL = /operative/.test(opScript.src) && opScript.src;
+
 	operative.pool = function(size, module, dependencies) {
 		size = 0 | Math.abs(size) || 1;
 		var operatives = [];
@@ -52,13 +58,14 @@
 	 */
 	function operative(module, dependencies) {
 
-		var getBase = operative.getBaseURL.bind(this);
+		var getBase = operative.getBaseURL;
+		var getSelf = operative.getSelfURL;
 
 		var OperativeContext = operative.hasWorkerSupport ? operative.Operative.BrowserWorker : operative.Operative.Iframe;
 
 		if (typeof module == 'function') {
 			// Allow a single function to be passed.
-			var o = new OperativeContext({ main: module }, dependencies, getBase);
+			var o = new OperativeContext({ main: module }, dependencies, getBase, getSelf);
 			var singularOperative = function() {
 				return o.api.main.apply(o, arguments);
 			};
@@ -74,7 +81,7 @@
 			return singularOperative;
 		}
 
-		return new OperativeContext(module, dependencies, getBase).api;
+		return new OperativeContext(module, dependencies, getBase, getSelf).api;
 
 	}
 
@@ -101,9 +108,23 @@
 		return new F();
 	};
 
+	/**
+	 * Set and get Self URL, i.e. the url of the
+	 * operative script itself.
+	 */
+
 	operative.setSelfURL = function(url) {
 		opScriptURL = url;
 	};
+
+	operative.getSelfURL = function(url) {
+		return opScriptURL;
+	};
+
+	/**
+	 * Set and get Base URL, i.e. the path used
+	 * as a base for getting dependencies
+	 */
 
 	operative.setBaseURL = function(base) {
 		baseURL = base;
