@@ -230,7 +230,13 @@ describe('Operative (worker Context)', function() {
 					return self.location.href;
 				});
 				o(function(url) {
-					expect(url).to.contain('?test-explicit');
+					if (operative.hasWorkerSupport) {
+						// Worker context
+						expect(url).to.contain('?test-explicit');
+					} else {
+						// Iframe context (self-url changing does nothing)
+						expect(url).to.contain('.html');
+					}
 					done();
 				});
 			});
