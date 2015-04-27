@@ -28,7 +28,7 @@ Non-blob worker support (i.e. for IE10) requires that you have a same-origin cop
 
 ### Browser Support
 
-Operative `0.4.3` has been explicitly tested in:
+Operative `0.4.4` has been explicitly tested in:
 
  * Chrome 14, 23, 29, 37, 42
  * Firefox 3, 10, 18, 23, 32
@@ -60,10 +60,10 @@ bower install operative
 npm install operative
 ```
 
-Or just grab the built JS file from `dist/`, also available here (0.4.3):
+Or just grab the built JS file from `dist/`, also available here (0.4.4):
 
- * https://raw.github.com/padolsey/operative/0.4.3/dist/operative.js
- * https://raw.github.com/padolsey/operative/0.4.3/dist/operative.min.js
+ * https://raw.github.com/padolsey/operative/0.4.4/dist/operative.js
+ * https://raw.github.com/padolsey/operative/0.4.4/dist/operative.min.js
 
 ### Creating an Operative Module
 
@@ -316,7 +316,8 @@ $ grunt
 ```
 
 ### Changelog
-
+ * 0.4.4 (27 Apr 2015)
+  * Reverted to a global variable to fix undefined errors in bundles
  * 0.4.3 (26 Apr 2015)
   * Fixed self-url setting (see [#36](https://github.com/padolsey/operative/issues/36))
   * Improved readme
