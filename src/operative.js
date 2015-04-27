@@ -8,20 +8,12 @@
  * @license MIT
  */
 
-(function (root, factory) {
+(function () {
+
 	if (typeof window == 'undefined' && self.importScripts) {
 		// Exit if operative.js is being loaded as worker (no blob support flow);
 		return;
 	}
-
-	if (typeof define === 'function' && define.amd) {
-		define([], factory);
-	} else if (typeof exports === 'object') {
-		module.exports = factory();
-	} else {
-		root.operative = factory();
-	}
-}(this, function () {
 
 	var hasOwn = {}.hasOwnProperty;
 
@@ -134,5 +126,6 @@
 		return baseURL;
 	};
 
-	return operative;
-}));
+	// Expose:
+	window.operative = operative;
+})();

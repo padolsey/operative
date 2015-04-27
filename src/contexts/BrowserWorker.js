@@ -333,4 +333,4 @@ function workerBoilerScript() {
 	});
 }
 
-}());
+})();
