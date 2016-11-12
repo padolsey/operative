@@ -318,7 +318,7 @@ function workerBoilerScript() {
 				cmd: 'result',
 				token: data.token,
 				result: res
-			}, hasTransferSupport && transfers || []);
+			}, self.hasTransferSupport && transfers || []);
 		}
 
 		function extractTransfers(args) {
