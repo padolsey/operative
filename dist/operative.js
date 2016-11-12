@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.4
+ * @version 0.4.5
  * @license MIT
  */
 (function () {
@@ -674,7 +674,7 @@ function workerBoilerScript() {
 				cmd: 'result',
 				token: data.token,
 				result: res
-			}, hasTransferSupport && transfers || []);
+			}, self.hasTransferSupport && transfers || []);
 		}
 
 		function extractTransfers(args) {
