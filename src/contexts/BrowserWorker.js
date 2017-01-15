@@ -86,6 +86,9 @@
 			case 'console':
 				window.console && window.console[data.method].apply(window.console, data.args);
 				break;
+			case 'deferred_reject_error':
+				this.deferreds[data.token].reject(data.error);
+				break;
 			case 'result':
 
 				var callback = this.callbacks[data.token];
@@ -275,6 +278,17 @@ function workerBoilerScript() {
 				return def;
 			}
 			function reject(r, transfers) {
+				if (r instanceof Error) {
+					postMessage({
+						cmd: 'deferred_reject_error',
+						token: data.token,
+						error: {
+							message: r.message,
+							stack: r.stack
+						}
+					});
+					return;
+				}
 				returnResult({
 					isDeferred: true,
 					action: 'reject',

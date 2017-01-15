@@ -107,6 +107,22 @@ describe('Operative (worker Context)', function() {
 					});
 				});
 			});
+			describe('Rejecting with an error', function() {
+				it('Should reject correctly', function(done) {
+					var op = operative(function() {
+						var deferred = this.deferred();
+						deferred.reject(new Error('foo 789'));
+					});
+					op().then(function() {
+						expect(true).to.be.false; // fail
+						done();
+					}).catch(function(err) {
+						console.log(err);
+						expect(err.message).to.equal('foo 789'); // pass
+						done();
+					});
+				});
+			});
 		});
 	});
 
