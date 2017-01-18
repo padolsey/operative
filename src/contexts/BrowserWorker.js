@@ -279,13 +279,22 @@ function workerBoilerScript() {
 			}
 			function reject(r, transfers) {
 				if (r instanceof Error) {
+					// Create an error object that can be cloned: (See #44/#45):
+					var cloneableError = {
+						message: r.message,
+						stack: r.stack,
+						name: r.name,
+						code: r.code
+					};
+					for (var i in r) {
+						if (r.hasOwnProperty(i)) {
+							cloneableError[i] = r[i];
+						}
+					}
 					postMessage({
 						cmd: 'deferred_reject_error',
 						token: data.token,
-						error: {
-							message: r.message,
-							stack: r.stack
-						}
+						error: cloneableError
 					});
 					return;
 				}
