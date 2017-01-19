@@ -316,6 +316,10 @@ $ grunt
 ```
 
 ### Changelog
+ * 0.4.6 (19 Jan 2017)
+  * Fix uncloneable native `Error` obj issue (see [#44](https://github.com/padolsey/operative/issues/44) & [#45](https://github.com/padolsey/operative/issues/45))
+ * 0.4.5
+  * Fix error `Uncaught ReferenceError: hasTransferSupport is not defined` (see [#43](https://github.com/padolsey/operative/issues/43))
  * 0.4.4 (27 Apr 2015)
   * Reverted to a global variable to fix undefined errors in bundles
  * 0.4.3 (26 Apr 2015)
