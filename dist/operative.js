@@ -5,7 +5,7 @@
  * ---
  * @author James Padolsey http://james.padolsey.com
  * @repo http://github.com/padolsey/operative
- * @version 0.4.5
+ * @version 0.4.6
  * @license MIT
  */
 (function () {
@@ -442,6 +442,9 @@
 			case 'console':
 				window.console && window.console[data.method].apply(window.console, data.args);
 				break;
+			case 'deferred_reject_error':
+				this.deferreds[data.token].reject(data.error);
+				break;
 			case 'result':
 
 				var callback = this.callbacks[data.token];
@@ -631,6 +634,26 @@ function workerBoilerScript() {
 				return def;
 			}
 			function reject(r, transfers) {
+				if (r instanceof Error) {
+					// Create an error object that can be cloned: (See #44/#45):
+					var cloneableError = {
+						message: r.message,
+						stack: r.stack,
+						name: r.name,
+						code: r.code
+					};
+					for (var i in r) {
+						if (r.hasOwnProperty(i)) {
+							cloneableError[i] = r[i];
+						}
+					}
+					postMessage({
+						cmd: 'deferred_reject_error',
+						token: data.token,
+						error: cloneableError
+					});
+					return;
+				}
 				returnResult({
 					isDeferred: true,
 					action: 'reject',
