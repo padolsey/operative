@@ -107,6 +107,39 @@ describe('Operative (worker Context)', function() {
 					});
 				});
 			});
+			describe('Rejecting with an error', function() {
+				it('Should reject correctly', function(done) {
+					var op = operative(function() {
+						var deferred = this.deferred();
+						deferred.reject(new Error('foo 789'));
+					});
+					op().then(function() {
+						expect(true).to.be.false; // fail
+						done();
+					}).catch(function(err) {
+						expect(err.message).to.equal('foo 789'); // pass
+						done();
+					});
+				});
+				describe('With additional props', function() {
+					it('Should reject correctly and be received with props', function(done) {
+						var op = operative(function() {
+							var deferred = this.deferred();
+							var error = new Error('foo');
+							error.custom = 123;
+							deferred.reject(error);
+						});
+						op().then(function() {
+							expect(true).to.be.false; // fail
+							done();
+						}).catch(function(err) {
+							expect(err.message).to.equal('foo');
+							expect(err.custom).to.equal(123);
+							done();
+						});
+					});
+				});
+			});
 		});
 	});
 
