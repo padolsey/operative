@@ -127,5 +127,9 @@
 	};
 
 	// Expose:
-	window.operative = operative;
+	if (typeof module !== 'undefined' && typeof module.exports !== 'undefined')
+		module.exports = operative;
+	} else {
+		window.operative = operative;
+	}
 })();
